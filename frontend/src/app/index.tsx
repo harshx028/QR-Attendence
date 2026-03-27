@@ -2,14 +2,15 @@ import { useRouter } from "expo-router";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useEffect, useState } from "react";
+import useAuth from "@/hooks/useAuth";
 
 export default function Index() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useAuth();
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace("/auth/login"); 
+      router.replace("/auth/login");
     }
   }, [isAuthenticated]);
   const isPermissionGranted = Boolean(permission?.granted);

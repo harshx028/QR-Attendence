@@ -1,6 +1,7 @@
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
+import { router } from "expo-router";
 
 const SignupPage = () => {
   const { control, handleSubmit } = useForm();
@@ -70,10 +71,15 @@ const SignupPage = () => {
           )}
         />
 
-        {/* Button */}
         <Pressable style={styles.button} onPress={handleSubmit(onSubmit)}>
           <Text style={styles.buttonText}>Signup</Text>
         </Pressable>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Already have an account?</Text>
+          <Pressable onPress={() => router.push("/auth/signup")}>
+            <Text style={styles.link}> Login</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -127,6 +133,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  footerText: {
+    color: "#555",
+  },
+  link: {
+    color: "#4f46e5",
     fontWeight: "600",
   },
 });

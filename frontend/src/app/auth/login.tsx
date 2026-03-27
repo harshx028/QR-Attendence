@@ -6,7 +6,7 @@ import { router } from "expo-router";
 const LoginPage = () => {
   const { control, handleSubmit } = useForm();
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: object) => {
     console.log(data);
   };
 
