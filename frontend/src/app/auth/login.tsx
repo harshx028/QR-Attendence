@@ -2,12 +2,26 @@ import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
+import { login } from "@/api/auth.api";
+import { useState } from "react";
 
 const LoginPage = () => {
+  type LoginCreds = {
+    email: string;
+    password: string;
+  };
   const { control, handleSubmit } = useForm();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sucessMsg, setSucessMsg] = useState<string | null>(null);
 
-  const onSubmit = (data: object) => {
-    console.log(data);
+  const onSubmit = async (data: LoginCreds) => {
+    const res = await login(data);
+    if (res) {
+      setSucessMsg(res?.msg || "Logged In Sucessfully");
+      return router.push("/");
+    } else {
+      return setErrorMsg(res?.msg || "Login Failed");
+    }
   };
 
   return (
@@ -55,11 +69,10 @@ const LoginPage = () => {
         />
 
         {/* Forgot Password */}
-        <Pressable>
+        {/*<Pressable>
           <Text style={styles.forgot}>Forgot Password?</Text>
-        </Pressable>
+        </Pressable>*/}
 
-        {/* Button */}
         <Pressable style={styles.button} onPress={handleSubmit(onSubmit)}>
           <Text style={styles.buttonText}>Login</Text>
         </Pressable>
@@ -70,6 +83,8 @@ const LoginPage = () => {
             <Text style={styles.link}> Signup</Text>
           </Pressable>
         </View>
+        {sucessMsg && <Text style={{ color: "green" }}>{sucessMsg}</Text>}
+        {errorMsg && <Text style={{ color: "red" }}>{errorMsg}</Text>}
       </View>
     </SafeAreaView>
   );

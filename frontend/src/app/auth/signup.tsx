@@ -2,12 +2,26 @@ import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
+import { useState } from "react";
+import { signup } from "@/api/auth.api";
 
 const SignupPage = () => {
   const { control, handleSubmit } = useForm();
-
-  const onSubmit = (data: object) => {
-    console.log(data);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sucessMsg, setSucessMsg] = useState<string | null>(null);
+  type SignupCreds = {
+    full_name: string;
+    email: string;
+    password: string;
+  };
+  const onSubmit = async (data: SignupCreds) => {
+    const res = await signup(data);
+    if (res) {
+      setSucessMsg(res?.msg || "Signed Up Sucessfully");
+      return router.push("/");
+    } else {
+      return setErrorMsg(res?.msg || "Signuped Up Failed");
+    }
   };
 
   return (
@@ -80,6 +94,8 @@ const SignupPage = () => {
             <Text style={styles.link}> Login</Text>
           </Pressable>
         </View>
+        {sucessMsg && <Text style={{ color: "green" }}>{sucessMsg}</Text>}
+        {errorMsg && <Text style={{ color: "red" }}>{errorMsg}</Text>}
       </View>
     </SafeAreaView>
   );
