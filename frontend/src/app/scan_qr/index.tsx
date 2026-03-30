@@ -1,9 +1,9 @@
 import { CameraView } from "expo-camera";
-
 import React, { Component } from "react";
 import { Text, View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const onQrScan = async (token: string) => {};
 const ScanQr = () => {
   return (
     <SafeAreaView style={styleSheet.container}>
@@ -14,7 +14,7 @@ const ScanQr = () => {
           barcodeTypes: ["qr"],
         }}
         onBarcodeScanned={({ data }) => {
-          console.log(data);
+          const marked_status = console.log(data);
         }}
       />
     </SafeAreaView>

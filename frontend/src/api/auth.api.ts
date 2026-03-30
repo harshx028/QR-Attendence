@@ -1,6 +1,6 @@
 import api from "@/api/axios";
 import useAuth from "@/hooks/useAuth";
-
+import * as SecureStorage from "expo-secure-store"
 type LoginCreds = {
   email: string
   password: string
@@ -32,7 +32,8 @@ const login = async (creds: LoginCreds) => {
   try {
     const res = await api.post("/api/v1/auth/login", creds)
     setIsAuthenticated(true)
-    setUser(res.data.data)
+    setUser(res.data.data.user)
+    await SecureStorage.setItemAsync("auth_token", res.data.data.token)
     return res.data
   } catch (error) {
     console.log("Something went Wrong", error)
@@ -46,7 +47,8 @@ const signup = async (creds: SignupCreds) => {
     const { email, password } = creds
     const res = await api.post("/api/v1/auth/signup", creds)
     setIsAuthenticated(true)
-    setUser(res.data.data)
+    setUser(res.data.data.user)
+    await SecureStorage.setItemAsync("auth_token", res.data.data.token)
     return res.data
   } catch (error: any) {
     console.log("Something went Wrong", error)
