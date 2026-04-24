@@ -1,12 +1,24 @@
 import axios from "axios";
-const baseURL: string = process.env.SERVER_URL ?? "http://localhost:8000";
-const authToken: string = "xyz";
-const config = {
+import * as SecureStore from "expo-secure-store";
+
+const baseURL: string = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://10.177.88.76:3000";
+
+const api = axios.create({
   baseURL,
-  headers: {
-    Authorization: `Bearer ${authToken}`,
+});
+
+api.interceptors.request.use(
+  async (config) => {
+    const token = await SecureStore.getItemAsync("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   },
-};
-const api = axios.create(config);
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default api;
+
