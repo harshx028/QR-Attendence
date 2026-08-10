@@ -10,6 +10,7 @@ export const getMe = async (req: any, res: Response) => {
                 id: true,
                 fullName: true,
                 email: true,
+                role: true,
                 createdAt: true,
                 updatedAt: true,
             },

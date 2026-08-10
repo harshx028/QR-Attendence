@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/adapter-better-sqlite3": "^7.9.0",
     "@prisma/client": "^7.5.0",
     "argon2": "^0.44.0",
+    "better-sqlite3": "^13.0.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
-    "pg": "^8.20.0",
     "qrcode": "^1.5.4"
   },
   "name": "backend",
@@ -16,12 +16,12 @@
   "description": "",
   "main": "index.js",
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
     "@types/node-cron": "^3.0.11",
-    "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
     "prisma": "^7.5.0",
     "tsx": "^4.21.0",
@@ -30,6 +30,7 @@
   "scripts": {
     "dev": "tsx watch index.ts",
     "start": "tsx index.ts",
+    "seed": "tsx prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

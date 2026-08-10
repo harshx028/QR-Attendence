@@ -46,6 +46,7 @@ export const signup = async (req: Request, res: Response) => {
         id: true,
         fullName: true,
         email: true,
+        role: true,
         createdAt: true,
       }
     });
@@ -109,6 +110,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         fullName: user.fullName,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error: any) {

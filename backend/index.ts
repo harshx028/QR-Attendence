@@ -6,6 +6,7 @@ import cors from 'cors';
 import { Request, Response } from 'express';
 import authRoutes from './routes/auth.routes.ts';
 import userRoutes from './routes/user.routes.ts';
+import attendanceRoutes from './routes/attendence.routes.ts';
 import { initCronJobs } from './services/cronService.ts';
 import { renderQRPage } from './controllers/qrController.ts';
 
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes)
+app.use('/api/v1/attendance', attendanceRoutes)
 
 // Attendance QR Page (HTML)
 app.get('/attendance/qr', renderQRPage);
