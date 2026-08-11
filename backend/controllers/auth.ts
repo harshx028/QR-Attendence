@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import prisma from '../services/prismaClient.ts';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_highly_secure_secret_key';
+import { JWT_SECRET } from '../services/jwtSecret.ts';
 
 export const signup = async (req: Request, res: Response) => {
   try {

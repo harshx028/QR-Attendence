@@ -1,6 +1,7 @@
 import { Response } from "express";
 import prisma from "../services/prismaClient.ts";
 import { AuthRequest } from "../types/express.ts";
+import { buildMonthlySummary, countWorkingDays } from "../services/attendanceSummary.ts";
 
 const getDayRange = (date: Date = new Date()) => {
   const start = new Date(date);
@@ -86,6 +87,89 @@ export const getMyAttendance = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error("Get my attendance error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance history", error: error.message });
+  }
+};
+
+export const getAdminSummary = async (req: AuthRequest, res: Response) => {
+  try {
+    const { month } = req.query;
+    const now = new Date();
+    const year = now.getFullYear();
+    const requestedMonth = month !== undefined ? Number(month) : now.getMonth();
+    const monthIndex = Number.isInteger(requestedMonth) && requestedMonth >= 0 && requestedMonth <= 11 ? requestedMonth : now.getMonth();
+
+    const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+    const end = new Date(year, monthIndex + 1, 1, 0, 0, 0, 0);
+    const monthStart = new Date(year, monthIndex, 1);
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    const records = await prisma.attendance.findMany({
+      where: {
+        markedAt: { gte: start, lt: end },
+      },
+    });
+
+    const summary = buildMonthlySummary(users, records, monthStart, now);
+
+    res.status(200).json({
+      success: true,
+      month: summary.month,
+      year: summary.year,
+      daysInMonth: summary.daysInMonth,
+      workingDaysElapsed: summary.workingDaysElapsed,
+      totalPresent: summary.totalPresent,
+      totalAbsent: summary.totalAbsent,
+      totalMembers: summary.totalMembers,
+      summary: summary.summary,
+    });
+  } catch (error: any) {
+    console.error("Get admin summary error:", error);
+    res.status(500).json({ success: false, message: "Error fetching summary", error: error.message });
+  }
+};
+
+export const getMonthlySummary = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const attendances = await prisma.attendance.findMany({
+      where: { userId, markedAt: { gte: start, lt: end } },
+      orderBy: { markedAt: "asc" },
+    });
+
+    const presentDates = new Set(attendances.map((a) => new Date(a.markedAt).toDateString()));
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const workingDaysElapsed = countWorkingDays(start, now);
+    const presentCount = presentDates.size;
+    const absentCount = Math.max(workingDaysElapsed - presentCount, 0);
+    const performancePct = workingDaysElapsed > 0 ? Math.round((presentCount / workingDaysElapsed) * 100) : 0;
+
+    res.status(200).json({
+      success: true,
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      daysInMonth,
+      workingDaysElapsed,
+      presentCount,
+      absentCount,
+      performancePct,
+      attendances,
+    });
+  } catch (error: any) {
+    console.error("Get monthly summary error:", error);
+    res.status(500).json({ success: false, message: "Error fetching monthly summary", error: error.message });
   }
 };
 
