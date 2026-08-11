@@ -51,4 +51,32 @@ const getAllAttendance = async (date?: string) => {
   }
 };
 
-export { markAttendance, getTodayStatus, getMyAttendance, getAllAttendance };
+const getAdminSummary = async (month?: number) => {
+  try {
+    const res = await api.get("/api/v1/attendance/summary/admin", {
+      params: month !== undefined ? { month } : undefined,
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error("Get admin summary failed:", error?.response?.data || error.message);
+    return error?.response?.data || { success: false, message: "Something went wrong" };
+  }
+};
+
+const getMonthlySummary = async () => {
+  try {
+    const res = await api.get("/api/v1/attendance/summary");
+    return res.data;
+  } catch (error: any) {
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    console.error("Get monthly summary failed:", {
+      status,
+      data,
+      message: error?.message,
+    });
+    return data || { success: false, message: `Request failed (${status ?? "network"})` };
+  }
+};
+
+export { markAttendance, getTodayStatus, getMyAttendance, getAllAttendance, getAdminSummary, getMonthlySummary };

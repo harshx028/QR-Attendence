@@ -15,7 +15,7 @@ type User = {
   role: "USER" | "ADMIN";
 } | null;
 
-type AuthContextValue = {
+export type AuthContextValue = {
   isLoading: boolean;
   isAuthenticated: boolean;
   user: User;
