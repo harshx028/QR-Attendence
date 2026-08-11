@@ -6,7 +6,7 @@ import useAuth from "@/hooks/useAuth";
 import { COLORS, SPACING, ROUNDNESS } from "@/constants/Theme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { getTodayStatus, getMyAttendance, Attendance } from "@/api/attendance.api";
+import { getTodayStatus, getMonthlySummary } from "@/api/attendance.api";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -15,7 +15,9 @@ export default function Dashboard() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isMarkedToday, setIsMarkedToday] = useState(false);
   const [markedAt, setMarkedAt] = useState<string | null>(null);
-  const [monthlyAttendances, setMonthlyAttendances] = useState<Attendance[]>([]);
+  const [presentCount, setPresentCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
+  const [daysElapsed, setDaysElapsed] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -25,14 +27,16 @@ export default function Dashboard() {
 
   const loadAttendanceData = useCallback(async () => {
     setIsLoadingStatus(true);
-    const [statusRes, historyRes] = await Promise.all([getTodayStatus(), getMyAttendance()]);
+    const [statusRes, summaryRes] = await Promise.all([getTodayStatus(), getMonthlySummary()]);
 
     if (statusRes?.success) {
       setIsMarkedToday(Boolean(statusRes.marked));
       setMarkedAt(statusRes.attendance?.markedAt ?? null);
     }
-    if (historyRes?.success) {
-      setMonthlyAttendances(historyRes.attendances || []);
+    if (summaryRes?.success) {
+      setPresentCount(summaryRes.presentCount ?? 0);
+      setAbsentCount(summaryRes.absentCount ?? 0);
+      setDaysElapsed(summaryRes.workingDaysElapsed ?? 0);
     }
     setIsLoadingStatus(false);
   }, []);
@@ -44,17 +48,6 @@ export default function Dashboard() {
   );
 
   const now = new Date();
-  const presentDatesThisMonth = new Set(
-    monthlyAttendances
-      .filter((a) => {
-        const d = new Date(a.markedAt);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      })
-      .map((a) => new Date(a.markedAt).toDateString())
-  );
-  const presentCount = presentDatesThisMonth.size;
-  const daysElapsed = now.getDate();
-  const absentCount = Math.max(daysElapsed - presentCount, 0);
   const performancePct = daysElapsed > 0 ? Math.round((presentCount / daysElapsed) * 100) : 0;
 
   return (
@@ -68,10 +61,18 @@ export default function Dashboard() {
             <Text style={styles.greeting}>Good Morning,</Text>
             <Text style={styles.userName}>{user?.fullName || "there"}</Text>
           </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.fullName?.slice(0, 2)?.toUpperCase() || "?"}
-            </Text>
+          <View style={styles.headerRight}>
+            <Pressable
+              style={({ pressed }) => [styles.logoutButton, pressed && styles.buttonPressed]}
+              onPress={() => router.push("/logout")}
+            >
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </Pressable>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.fullName?.slice(0, 2)?.toUpperCase() || "?"}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -153,7 +154,7 @@ export default function Dashboard() {
         {user?.role === "ADMIN" && (
           <Pressable
             style={({ pressed }) => [styles.qrButton, pressed && styles.buttonPressed, { marginTop: SPACING.sm }]}
-            onPress={() => router.push("/attendence/check_attendece")}
+            onPress={() => router.push("/attendence/summary")}
           >
             <Text style={styles.qrButtonText}>View Team Attendance</Text>
           </Pressable>
@@ -201,6 +202,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.md,
+  },
+  logoutButton: {
+    borderWidth: 1.5,
+    borderColor: COLORS.outline,
+    borderRadius: ROUNDNESS.full,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+  },
+  logoutButtonText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    fontWeight: "700",
   },
   dateText: {
     fontSize: 14,

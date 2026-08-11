@@ -1,10 +1,25 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 
-const baseURL: string = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://192.168.1.59:5000";
+const resolveBaseURL = (): string => {
+  const explicit = process.env.EXPO_PUBLIC_SERVER_URL;
+  if (explicit) return explicit.replace(/\/+$/, "");
+
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    return `http://${host}:3000`;
+  }
+
+  return "http://localhost:3000";
+};
+
+const baseURL = resolveBaseURL();
 
 const api = axios.create({
   baseURL,
+  timeout: 15000,
 });
 
 api.interceptors.request.use(

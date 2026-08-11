@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../types/express.ts';
 import prisma from '../services/prismaClient.ts';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_highly_secure_secret_key';
+import { JWT_SECRET } from '../services/jwtSecret.ts';
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;

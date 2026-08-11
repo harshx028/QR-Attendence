@@ -4,31 +4,30 @@ import prisma from "../services/prismaClient";
 
 export const renderQRPage = async (req: Request, res: Response) => {
   try {
-    // Fetch the latest token
     const tokenRecord = await prisma.attendanceToken.findUnique({
       where: { name: "attendance token" },
     });
 
     if (!tokenRecord) {
-
-      return res.status(404).send("Attendance token not found. Please wait for the cron job to run.");
+      return res
+        .status(404)
+        .send(
+          "Attendance token not found. Please wait for the cron job to run.",
+        );
     }
 
     const token = tokenRecord.value;
     const updatedAt = tokenRecord.updatedAt.toLocaleString();
 
-    // Generate QR code Data URI
-    // The content of the QR code is just the token string
     const qrDataUri = await QRCode.toDataURL(token, {
       width: 400,
       margin: 2,
       color: {
-        dark: "#4F46E5", // Matching our premium theme
+        dark: "#4F46E5",
         light: "#FFFFFF",
       },
     });
 
-    // Render simple HTML
     const html = `
       <!DOCTYPE html>
       <html lang="en">
