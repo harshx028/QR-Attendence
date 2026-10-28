@@ -47,12 +47,14 @@ export const saveToSheet = async (attendanceData: SaveToSheetData) => {
   try {
     const { sheets, spreadsheetId } = getAuthAndSheets();
     const markedAt = attendanceData.markedAt || new Date();
+    const dateStr = markedAt.toISOString().split("T")[0]; // YYYY-MM-DD
 
     const values = [
       [
         attendanceData.fullName || "",
         attendanceData.email || "",
         attendanceData.userId || "",
+        dateStr,
         markedAt.toISOString(),
         markedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       ],
@@ -60,7 +62,7 @@ export const saveToSheet = async (attendanceData: SaveToSheetData) => {
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: "Attendance!A:E",
+      range: "Attendance!A:F",
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
@@ -81,22 +83,22 @@ export const getAllAttendanceFromSheet = async (date?: string) => {
     const { sheets, spreadsheetId } = getAuthAndSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: "Attendance!A:E",
+      range: "Attendance!A:F",
     });
 
     const rows = response.data.values || [];
     if (rows.length === 0) return [];
 
     // Skip header if present
-    const dataRows = rows[0].some((cell: any) => String(cell).toLowerCase().includes("name") || String(cell).toLowerCase().includes("email"))
+    const dataRows = rows[0].some((cell: any) => String(cell).toLowerCase().includes("name") || String(cell).toLowerCase().includes("email") || String(cell).toLowerCase().includes("date"))
       ? rows.slice(1)
       : rows;
 
     let attendances: any[] = dataRows
       .filter((row: any) => row && row.length > 0)
       .map((row: any) => {
-        const markedAtStr = row[4] || row[3] || "";
-        const markedAt = markedAtStr ? new Date(row[3] || row[4]) : new Date();
+        const markedAtStr = row[5] || row[4] || row[3] || "";
+        const markedAt = markedAtStr ? new Date(row[5] || row[4] || row[3]) : new Date();
         return {
           user: {
             fullName: row[0] || "",
@@ -104,8 +106,9 @@ export const getAllAttendanceFromSheet = async (date?: string) => {
             id: row[2] || "",
           },
           userId: row[2] || "",
+          date: row[3] || markedAt.toISOString().split("T")[0],
           markedAt,
-          markedAtIso: row[3] || markedAt.toISOString(),
+          markedAtIso: row[4] || row[5] || markedAt.toISOString(),
         };
       });
 
