@@ -10,11 +10,11 @@ const getBaseURL = async (): Promise<string> => {
   } catch (error) {
     console.error("Error getting server URL:", error);
   }
-  return process.env.EXPO_PUBLIC_SERVER_URL ?? "http://192.168.1.59:5000";
+  return "https://attendence.durga-foundation.org";
 };
 
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_SERVER_URL ?? "http://192.168.1.59:5000",
+  baseURL: "https://attendence.durga-foundation.org",
 });
 
 api.interceptors.request.use(

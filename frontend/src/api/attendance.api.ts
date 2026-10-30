@@ -3,7 +3,10 @@ import api from "@/api/axios";
 export type Attendance = {
   id: string;
   userId: string;
+  date: string;
   markedAt: string;
+  checkInAt?: string;
+  checkOutAt?: string | null;
   user?: {
     id: string;
     fullName: string;
@@ -11,9 +14,26 @@ export type Attendance = {
   };
 };
 
-const markAttendance = async (token: string) => {
+export type TodayStatus = {
+  success: boolean;
+  marked: boolean;
+  checkedIn: boolean;
+  checkedOut: boolean;
+  attendance: {
+    date: string;
+    markedAt: string;
+    checkInAt: string;
+    checkOutAt: string | null;
+  } | null;
+};
+
+const markAttendance = async (token: string, lat?: number | null, lng?: number | null) => {
   try {
-    const res = await api.post("/api/v1/attendance/mark", { token });
+    const res = await api.post("/api/v1/attendance/mark", {
+      token,
+      lat: lat ?? null,
+      lng: lng ?? null,
+    });
     return res.data;
   } catch (error: any) {
     console.error("Mark attendance failed:", error?.response?.data || error.message);
@@ -21,13 +41,13 @@ const markAttendance = async (token: string) => {
   }
 };
 
-const getTodayStatus = async () => {
+const getTodayStatus = async (): Promise<TodayStatus> => {
   try {
     const res = await api.get("/api/v1/attendance/today");
     return res.data;
   } catch (error: any) {
     console.error("Get today status failed:", error?.response?.data || error.message);
-    return error?.response?.data || { success: false, message: "Something went wrong" };
+    return { success: false, marked: false, checkedIn: false, checkedOut: false, attendance: null };
   }
 };
 

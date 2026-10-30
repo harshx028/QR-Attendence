@@ -6,7 +6,12 @@ import {
   useCallback,
 } from "react";
 import * as SecureStore from "expo-secure-store";
-import { login as apiLogin, signup as apiSignup, verifyAuth as apiVerifyAuth } from "@/api/auth.api";
+import {
+  login as apiLogin,
+  signup as apiSignup,
+  logout as apiLogout,
+  verifyAuth as apiVerifyAuth,
+} from "@/api/auth.api";
 
 type User = {
   id: string;
@@ -85,26 +90,17 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
   };
 
   const logout = async () => {
+    await apiLogout();
     await SecureStore.deleteItemAsync("token");
     setUser(null);
     setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        isLoading,
-        isAuthenticated,
-        user,
-        login,
-        signup,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ isLoading, isAuthenticated, user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export { AuthContext, AuthProvider };
-

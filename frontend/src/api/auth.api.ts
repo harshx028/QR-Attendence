@@ -41,5 +41,12 @@ const signup = async (creds: SignupCreds) => {
   }
 };
 
-export { verifyAuth, login, signup };
+const logout = async () => {
+  try {
+    await api.post("/api/v1/auth/logout");
+  } catch (_) {
+    // Ignore — token may already be expired; we still clear it locally
+  }
+};
 
+export { verifyAuth, login, signup, logout };

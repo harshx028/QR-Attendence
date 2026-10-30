@@ -1,102 +1,142 @@
 import { useRouter } from "expo-router";
-import { Text, View, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import useAuth from "@/hooks/useAuth";
 import { COLORS, SPACING, ROUNDNESS } from "@/constants/Theme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { getTodayStatus, getMyAttendance, Attendance } from "@/api/attendance.api";
+import { getTodayStatus, getMyAttendance, Attendance, TodayStatus } from "@/api/attendance.api";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  const [isMarkedToday, setIsMarkedToday] = useState(false);
-  const [markedAt, setMarkedAt] = useState<string | null>(null);
+  const [todayStatus, setTodayStatus] = useState<TodayStatus | null>(null);
   const [monthlyAttendances, setMonthlyAttendances] = useState<Attendance[]>([]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/auth/login");
-    }
+    if (!isAuthenticated) router.replace("/auth/login");
   }, [isAuthenticated]);
 
   const loadAttendanceData = useCallback(async () => {
     setIsLoadingStatus(true);
     const [statusRes, historyRes] = await Promise.all([getTodayStatus(), getMyAttendance()]);
-
-    if (statusRes?.success) {
-      setIsMarkedToday(Boolean(statusRes.marked));
-      setMarkedAt(statusRes.attendance?.markedAt ?? null);
-    }
-    if (historyRes?.success) {
-      setMonthlyAttendances(historyRes.attendances || []);
-    }
+    if (statusRes?.success !== false) setTodayStatus(statusRes);
+    if (historyRes?.success) setMonthlyAttendances(historyRes.attendances || []);
     setIsLoadingStatus(false);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadAttendanceData();
-    }, [loadAttendanceData])
-  );
+  useFocusEffect(useCallback(() => { loadAttendanceData(); }, [loadAttendanceData]));
+
+  const handleLogout = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/auth/login");
+        },
+      },
+    ]);
+  };
 
   const now = new Date();
   const presentDatesThisMonth = new Set(
     monthlyAttendances
       .filter((a) => {
-        const d = new Date(a.markedAt);
+        const d = new Date(a.markedAt || a.checkInAt || a.date);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
-      .map((a) => new Date(a.markedAt).toDateString())
+      .map((a) => a.date || new Date(a.markedAt).toDateString())
   );
   const presentCount = presentDatesThisMonth.size;
   const daysElapsed = now.getDate();
   const absentCount = Math.max(daysElapsed - presentCount, 0);
   const performancePct = daysElapsed > 0 ? Math.round((presentCount / daysElapsed) * 100) : 0;
 
+  const checkedIn = todayStatus?.checkedIn ?? false;
+  const checkedOut = todayStatus?.checkedOut ?? false;
+  const checkInAt = todayStatus?.attendance?.checkInAt ?? todayStatus?.attendance?.markedAt ?? null;
+  const checkOutAt = todayStatus?.attendance?.checkOutAt ?? null;
+
+  const fmtTime = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+      : null;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Header Section */}
+        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good Morning,</Text>
             <Text style={styles.userName}>{user?.fullName || "there"}</Text>
           </View>
-          <View style={styles.avatar}>
+          <Pressable style={styles.avatar} onPress={handleLogout}>
             <Text style={styles.avatarText}>
               {user?.fullName?.slice(0, 2)?.toUpperCase() || "?"}
             </Text>
-          </View>
+          </Pressable>
         </View>
 
-        {/* Date Display */}
         <Text style={styles.dateText}>
-          {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+          {now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
         </Text>
 
         {/* Action Card */}
         <View style={styles.actionCard}>
           {isLoadingStatus ? (
             <ActivityIndicator size="large" color={COLORS.primary} />
-          ) : isMarkedToday ? (
+          ) : checkedIn && checkedOut ? (
+            /* Fully done */
             <View style={styles.completedCard}>
               <View style={styles.successBadge}>
-                 <Text style={styles.successText}>✓ Marked</Text>
+                <Text style={styles.successText}>✓ Complete</Text>
               </View>
-              <Text style={styles.cardStatusTitle}>Attendance Completed</Text>
-              {markedAt && (
-                <Text style={styles.completedSub}>
-                  Marked at {new Date(markedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-              )}
+              <Text style={styles.cardStatusTitle}>Attendance Complete</Text>
+              <View style={styles.timeRow}>
+                <View style={styles.timeBlock}>
+                  <Text style={styles.timeLabel}>IN</Text>
+                  <Text style={styles.timeValue}>{fmtTime(checkInAt)}</Text>
+                </View>
+                <View style={styles.timeDivider} />
+                <View style={styles.timeBlock}>
+                  <Text style={[styles.timeLabel, { color: "#DC2626" }]}>OUT</Text>
+                  <Text style={styles.timeValue}>{fmtTime(checkOutAt)}</Text>
+                </View>
+              </View>
+            </View>
+          ) : checkedIn ? (
+            /* Checked in, not out yet */
+            <View style={styles.completedCard}>
+              <View style={[styles.successBadge, { backgroundColor: "#FEF3C7" }]}>
+                <Text style={[styles.successText, { color: "#D97706" }]}>↓ Checked In</Text>
+              </View>
+              <Text style={styles.cardStatusTitle}>You're checked in</Text>
+              <Text style={styles.completedSub}>
+                Since {fmtTime(checkInAt)}
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.mainButton,
+                  styles.checkOutButton,
+                  pressed && styles.buttonPressed,
+                  { marginTop: SPACING.lg },
+                ]}
+                onPress={() => router.push("/scan_qr")}
+              >
+                <Text style={styles.mainButtonText}>Scan to Check Out</Text>
+              </Pressable>
             </View>
           ) : (
+            /* Not checked in yet */
             <>
               <Text style={styles.cardStatusTitle}>Not checked in today</Text>
               <Text style={styles.completedSub}>Scan the office QR code to mark your attendance.</Text>
@@ -109,55 +149,62 @@ export default function Dashboard() {
                 ]}
                 onPress={() => router.push("/scan_qr")}
               >
-                <Text style={styles.mainButtonText}>Scan Company QR</Text>
+                <Text style={styles.mainButtonText}>Scan to Check In</Text>
               </Pressable>
             </>
           )}
         </View>
 
-        {/* Stats Title */}
+        {/* Stats */}
         <Text style={styles.sectionTitle}>Monthly Overview</Text>
-
-        {/* Stats Cards */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: '#E0F2FE' }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#7DD3FC' }]}>
-               <Text style={{ fontSize: 18 }}>📅</Text>
+          <View style={[styles.statCard, { backgroundColor: "#E0F2FE" }]}>
+            <View style={[styles.statIcon, { backgroundColor: "#7DD3FC" }]}>
+              <Text style={{ fontSize: 18 }}>📅</Text>
             </View>
             <Text style={styles.statValue}>{String(presentCount).padStart(2, "0")}</Text>
             <Text style={styles.statLabel}>Present</Text>
           </View>
-
-          <View style={[styles.statCard, { backgroundColor: '#FFE4E6' }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#FDA4AF' }]}>
-               <Text style={{ fontSize: 18 }}>✘</Text>
+          <View style={[styles.statCard, { backgroundColor: "#FFE4E6" }]}>
+            <View style={[styles.statIcon, { backgroundColor: "#FDA4AF" }]}>
+              <Text style={{ fontSize: 18 }}>✘</Text>
             </View>
             <Text style={styles.statValue}>{String(absentCount).padStart(2, "0")}</Text>
             <Text style={styles.statLabel}>Absent</Text>
           </View>
         </View>
 
-        {/* Performance Card */}
+        {/* Performance */}
         <View style={styles.performanceCard}>
           <View style={styles.perfHeader}>
-             <Text style={styles.perfTitle}>Performance Ring</Text>
-             <Text style={styles.perfValue}>{performancePct}%</Text>
+            <Text style={styles.perfTitle}>Performance Ring</Text>
+            <Text style={styles.perfValue}>{performancePct}%</Text>
           </View>
           <View style={styles.progressBarBg}>
-             <View style={[styles.progressBarFill, { width: `${performancePct}%` }]} />
+            <View style={[styles.progressBarFill, { width: `${performancePct}%` }]} />
           </View>
-          <Text style={styles.perfDesc}>Based on {presentCount} of {daysElapsed} days this month.</Text>
+          <Text style={styles.perfDesc}>
+            Based on {presentCount} of {daysElapsed} days this month.
+          </Text>
         </View>
 
-        {/* Admin Entry Point */}
+        {/* Admin button */}
         {user?.role === "ADMIN" && (
           <Pressable
-            style={({ pressed }) => [styles.qrButton, pressed && styles.buttonPressed, { marginTop: SPACING.sm }]}
+            style={({ pressed }) => [styles.outlineButton, pressed && styles.buttonPressed]}
             onPress={() => router.push("/attendence/check_attendece")}
           >
-            <Text style={styles.qrButtonText}>View Team Attendance</Text>
+            <Text style={styles.outlineButtonText}>View Team Attendance</Text>
           </Pressable>
         )}
+
+        {/* Logout */}
+        <Pressable
+          style={({ pressed }) => [styles.logoutButton, pressed && styles.buttonPressed]}
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutButtonText}>Sign Out</Text>
+        </Pressable>
 
       </ScrollView>
     </SafeAreaView>
@@ -165,30 +212,16 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xxl,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  scrollContent: { padding: SPACING.lg, paddingBottom: SPACING.xxl },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: SPACING.sm,
   },
-  greeting: {
-    fontSize: 16,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: "500",
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: COLORS.onSurface,
-  },
+  greeting: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: "500" },
+  userName: { fontSize: 24, fontWeight: "800", color: COLORS.onSurface },
   avatar: {
     width: 48,
     height: 48,
@@ -197,11 +230,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  avatarText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   dateText: {
     fontSize: 14,
     color: COLORS.onSurfaceVariant,
@@ -221,12 +250,37 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.03)",
     alignItems: "center",
   },
+  completedCard: { alignItems: "center", paddingVertical: SPACING.sm, width: "100%" },
+  successBadge: {
+    backgroundColor: "#D1FAE5",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: ROUNDNESS.full,
+    marginBottom: SPACING.md,
+  },
+  successText: { color: "#059669", fontWeight: "700", fontSize: 12 },
   cardStatusTitle: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.onSurfaceVariant,
     textAlign: "center",
   },
+  completedSub: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.sm,
+    textAlign: "center",
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: SPACING.md,
+    gap: SPACING.lg,
+  },
+  timeBlock: { alignItems: "center" },
+  timeLabel: { fontSize: 11, fontWeight: "700", color: "#059669", letterSpacing: 1 },
+  timeValue: { fontSize: 20, fontWeight: "800", color: COLORS.onSurface, marginTop: 2 },
+  timeDivider: { width: 1, height: 32, backgroundColor: COLORS.outline },
   mainButton: {
     padding: SPACING.md,
     borderRadius: ROUNDNESS.full,
@@ -236,58 +290,18 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: "100%",
   },
-  checkInButton: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-  },
-  mainButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  buttonPressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.9,
-  },
-  completedCard: {
-    alignItems: "center",
-    paddingVertical: SPACING.sm,
-  },
-  successBadge: {
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: ROUNDNESS.full,
-    marginBottom: SPACING.md,
-  },
-  successText: {
-    color: '#059669',
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  completedSub: {
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.sm,
-    textAlign: "center",
-  },
+  checkInButton: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary },
+  checkOutButton: { backgroundColor: "#DC2626", shadowColor: "#DC2626" },
+  mainButtonText: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  buttonPressed: { transform: [{ scale: 0.98 }], opacity: 0.9 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
     color: COLORS.onSurface,
     marginBottom: SPACING.md,
   },
-  statsRow: {
-    flexDirection: "row",
-    gap: SPACING.md,
-    marginBottom: SPACING.xl,
-  },
-  statCard: {
-    flex: 1,
-    padding: SPACING.md,
-    borderRadius: ROUNDNESS.lg,
-    alignItems: "center",
-  },
+  statsRow: { flexDirection: "row", gap: SPACING.md, marginBottom: SPACING.xl },
+  statCard: { flex: 1, padding: SPACING.md, borderRadius: ROUNDNESS.lg, alignItems: "center" },
   statIcon: {
     width: 32,
     height: 32,
@@ -296,18 +310,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: COLORS.onSurface,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: "500",
-  },
+  statValue: { fontSize: 20, fontWeight: "900", color: COLORS.onSurface },
+  statLabel: { fontSize: 12, color: COLORS.onSurfaceVariant, fontWeight: "500" },
   performanceCard: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: ROUNDNESS.lg,
     padding: SPACING.md,
     marginBottom: SPACING.xl,
@@ -318,42 +324,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  perfTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.onSurface,
-  },
-  perfValue: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: COLORS.primary,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    marginBottom: 10,
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-  },
-  perfDesc: {
-    fontSize: 11,
-    color: COLORS.onSurfaceVariant,
-  },
-  qrButton: {
+  perfTitle: { fontSize: 14, fontWeight: "700", color: COLORS.onSurface },
+  perfValue: { fontSize: 14, fontWeight: "900", color: COLORS.primary },
+  progressBarBg: { height: 8, backgroundColor: "#E5E7EB", borderRadius: 4, marginBottom: 10 },
+  progressBarFill: { height: "100%", backgroundColor: COLORS.primary, borderRadius: 4 },
+  perfDesc: { fontSize: 11, color: COLORS.onSurfaceVariant },
+  outlineButton: {
     borderWidth: 2,
     borderColor: COLORS.primary,
     borderRadius: ROUNDNESS.full,
     padding: SPACING.md,
     alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  outlineButtonText: { color: COLORS.primary, fontSize: 16, fontWeight: "800" },
+  logoutButton: {
+    borderWidth: 1.5,
+    borderColor: COLORS.outline,
+    borderRadius: ROUNDNESS.full,
+    padding: SPACING.md,
+    alignItems: "center",
     marginTop: SPACING.sm,
   },
-  qrButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "800",
-  },
+  logoutButtonText: { color: COLORS.onSurfaceVariant, fontSize: 15, fontWeight: "600" },
 });
