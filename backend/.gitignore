@@ -2,6 +2,9 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Google service account key — never commit
+credentials/service-account.json
+
 /generated/prisma
 
 # SQLite dev database

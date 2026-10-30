@@ -14,17 +14,14 @@ interface SaveToSheetData {
 }
 
 const getAuthAndSheets = () => {
-  let keyFile = path.resolve(process.cwd(), "credentials", "service-account.json");
-  if (!fs.existsSync(keyFile)) {
-    keyFile = path.resolve(process.cwd(), "backend", "credentials", "service-account.json");
-  }
-  if (!fs.existsSync(keyFile)) {
-    keyFile = path.resolve(process.cwd(), "credentials.json");
-  }
+  const keyFile = path.resolve(
+    path.dirname(new URL(import.meta.url).pathname),
+    "../credentials/service-account.json"
+  );
 
   if (!fs.existsSync(keyFile)) {
     throw new Error(
-      "Service account credentials file not found. Please place it in the 'credentials' folder."
+      "Service account credentials file not found. Please place service-account.json in backend/credentials/"
     );
   }
 
