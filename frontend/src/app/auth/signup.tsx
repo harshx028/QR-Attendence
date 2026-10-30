@@ -3,7 +3,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
 import useAuth from "@/hooks/useAuth";
-import useServerConfig from "@/context/ServerConfigContext";
 import { useState } from "react";
 import { COLORS, SPACING, ROUNDNESS } from "@/constants/Theme";
 import { StatusBar } from "expo-status-bar";
@@ -17,7 +16,6 @@ const SignupPage = () => {
   };
   const { control, handleSubmit } = useForm<SignupCreds>();
   const { signup } = useAuth();
-  const { serverUrl, clearServerUrl } = useServerConfig();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -166,17 +164,6 @@ const SignupPage = () => {
               </Pressable>
             </View>
 
-            <Pressable
-              style={styles.serverConfigLink}
-              onPress={async () => {
-                await clearServerUrl();
-                router.replace("/server-config");
-              }}
-            >
-              <Text style={styles.serverConfigText}>
-                Change Server URL {serverUrl ? `(${serverUrl})` : ""}
-              </Text>
-            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -303,16 +290,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "700",
     fontSize: 14,
-  },
-  serverConfigLink: {
-    alignItems: "center",
-    marginTop: SPACING.lg,
-    padding: SPACING.sm,
-  },
-  serverConfigText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    textDecorationLine: "underline",
   },
 });
 
