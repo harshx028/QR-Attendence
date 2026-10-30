@@ -25,6 +25,8 @@ interface SaveToSheetData {
   lng?: number | null;
 }
 
+const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || "Attendance";
+
 const getAuthAndSheets = () => {
   const keyFile = path.resolve(
     path.dirname(new URL(import.meta.url).pathname),
@@ -77,7 +79,7 @@ export const saveToSheet = async (data: SaveToSheetData) => {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: "Attendance!A:G",
+      range: `${SHEET_TAB}!A:G`,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values },
@@ -137,7 +139,7 @@ const getRawRows = async (): Promise<ParsedRow[]> => {
   const { sheets, spreadsheetId } = getAuthAndSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: "Attendance!A:G",
+    range: `${SHEET_TAB}!A:G`,
   });
 
   const rows = response.data.values || [];
