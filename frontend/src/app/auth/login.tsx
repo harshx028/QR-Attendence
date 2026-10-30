@@ -41,7 +41,10 @@ const LoginPage = () => {
       >
         <View style={styles.content}>
           <View style={styles.headerContainer}>
-            <Text style={styles.appName}>Attendance</Text>
+            <View style={styles.logoMark}>
+              <Text style={styles.logoCheck}>✓</Text>
+            </View>
+            <Text style={styles.appName}>Mark Attendence</Text>
             <Text style={styles.tagline}>Simplify your workday</Text>
           </View>
 
@@ -158,8 +161,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SPACING.xxl,
   },
+  logoMark: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: SPACING.sm,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  logoCheck: {
+    color: "#fff",
+    fontSize: 34,
+    fontWeight: "900",
+  },
   appName: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: "900",
     color: COLORS.primary,
     letterSpacing: -0.5,

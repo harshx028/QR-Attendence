@@ -75,9 +75,14 @@ export default function Dashboard() {
 
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Good Morning,</Text>
-            <Text style={styles.userName}>{user?.fullName || "there"}</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.logoMark}>
+              <Text style={styles.logoCheck}>✓</Text>
+            </View>
+            <View>
+              <Text style={styles.appTitle}>Mark Attendence</Text>
+              <Text style={styles.greeting}>Hello, {user?.fullName?.split(" ")[0] || "there"}</Text>
+            </View>
           </View>
           <Pressable style={styles.avatar} onPress={handleLogout}>
             <Text style={styles.avatarText}>
@@ -87,7 +92,7 @@ export default function Dashboard() {
         </View>
 
         <Text style={styles.dateText}>
-          {now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          {now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </Text>
 
         {/* Action Card */}
@@ -220,7 +225,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: SPACING.sm,
   },
-  greeting: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: "500" },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+  },
+  logoMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  logoCheck: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  appTitle: { fontSize: 15, fontWeight: "800", color: COLORS.primary },
+  greeting: { fontSize: 13, color: COLORS.onSurfaceVariant, fontWeight: "500" },
   userName: { fontSize: 24, fontWeight: "800", color: COLORS.onSurface },
   avatar: {
     width: 48,
