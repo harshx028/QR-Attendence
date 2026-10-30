@@ -35,11 +35,18 @@ model AttendanceToken {
 }
 
 model Attendance {
-  id       String   @id @default(uuid())
-  userId   String
-  user     User     @relation(fields: [userId], references: [id])
-  markedAt DateTime @default(now())
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  date        String    @default("")
+  markedAt    DateTime  @default(now())
+  checkOutAt  DateTime?
+  checkInLat  Float?
+  checkInLng  Float?
+  checkOutLat Float?
+  checkOutLng Float?
 
   @@index([userId])
+  @@index([userId, date])
 }
 

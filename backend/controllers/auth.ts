@@ -123,6 +123,10 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const logout = (_req: Request, res: Response) => {
+  res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { email, newPassword } = req.body;
