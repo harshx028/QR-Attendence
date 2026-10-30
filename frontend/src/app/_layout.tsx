@@ -1,39 +1,26 @@
 import { AuthProvider } from "@/context/AuthContext";
-import { ServerConfigProvider } from "@/context/ServerConfigContext";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import useAuth from "@/hooks/useAuth";
-import useServerConfig from "@/context/ServerConfigContext";
 import { View, ActivityIndicator } from "react-native";
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isConfigured, isLoading: configLoading } = useServerConfig();
+  const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (authLoading || configLoading) return;
-
+    if (isLoading) return;
     const inAuthGroup = segments[0] === "auth";
-    const inServerConfig = segments[0] === "server-config";
-
-    if (!isConfigured && !inServerConfig) {
-      router.replace("/server-config");
-      return;
-    }
-
-    if (isConfigured && !isAuthenticated && !inAuthGroup && !inServerConfig) {
-      // Redirect to the login page if not authenticated and not in the auth group
+    if (!isAuthenticated && !inAuthGroup) {
       router.replace("/auth/login");
-    } else if (isConfigured && isAuthenticated && (inAuthGroup || inServerConfig)) {
-      // Redirect to the home page if authenticated
+    } else if (isAuthenticated && inAuthGroup) {
       router.replace("/");
     }
-  }, [isAuthenticated, segments, authLoading, isConfigured, configLoading]);
+  }, [isAuthenticated, segments, isLoading]);
 
-  if (authLoading || configLoading) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#4f46e5" />
@@ -46,15 +33,12 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <ServerConfigProvider>
-      <AuthProvider>
-        <SafeAreaProvider>
-          <RouteGuard>
-            <Stack screenOptions={{ headerShown: false }} />
-          </RouteGuard>
-        </SafeAreaProvider>
-      </AuthProvider>
-    </ServerConfigProvider>
+    <AuthProvider>
+      <SafeAreaProvider>
+        <RouteGuard>
+          <Stack screenOptions={{ headerShown: false }} />
+        </RouteGuard>
+      </SafeAreaProvider>
+    </AuthProvider>
   );
 }
-
