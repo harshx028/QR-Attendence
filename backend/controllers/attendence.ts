@@ -1,12 +1,7 @@
 import { Response } from "express";
 import prisma from "../services/prismaClient.ts";
 import { AuthRequest } from "../types/express.ts";
-import {
-  saveToSheet,
-  getAllAttendanceFromSheet,
-  getMyAttendanceFromSheet,
-  getTodayStatusFromSheet,
-} from "../services/google.ts";
+import { saveToSheet } from "../services/google.ts";
 
 const getISTDate = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -37,7 +32,7 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
     });
 
     if (!existing) {
-      // First scan of the day — CHECK-IN
+      // First scan — CHECK-IN
       const attendance = await prisma.attendance.create({
         data: {
           userId,
@@ -49,19 +44,15 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
         include: { user: { select: { fullName: true, email: true } } },
       });
 
-      try {
-        await saveToSheet({
-          userId,
-          fullName: attendance.user?.fullName,
-          email: attendance.user?.email,
-          eventType: "CHECK-IN",
-          eventTime: now,
-          lat: lat ?? null,
-          lng: lng ?? null,
-        });
-      } catch (e: any) {
-        console.error("[SHEET] Failed to save check-in:", e.message);
-      }
+      saveToSheet({
+        userId,
+        fullName: attendance.user?.fullName,
+        email: attendance.user?.email,
+        eventType: "CHECK-IN",
+        eventTime: now,
+        lat: lat ?? null,
+        lng: lng ?? null,
+      }).catch((e) => console.error("[SHEET] Failed to log check-in:", e.message));
 
       return res.status(201).json({
         success: true,
@@ -90,19 +81,15 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
       include: { user: { select: { fullName: true, email: true } } },
     });
 
-    try {
-      await saveToSheet({
-        userId,
-        fullName: updated.user?.fullName,
-        email: updated.user?.email,
-        eventType: "CHECK-OUT",
-        eventTime: now,
-        lat: lat ?? null,
-        lng: lng ?? null,
-      });
-    } catch (e: any) {
-      console.error("[SHEET] Failed to save check-out:", e.message);
-    }
+    saveToSheet({
+      userId,
+      fullName: updated.user?.fullName,
+      email: updated.user?.email,
+      eventType: "CHECK-OUT",
+      eventTime: now,
+      lat: lat ?? null,
+      lng: lng ?? null,
+    }).catch((e) => console.error("[SHEET] Failed to log check-out:", e.message));
 
     return res.status(200).json({
       success: true,
@@ -120,34 +107,18 @@ export const getTodayStatus = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
     const today = getISTDate();
-    let email: string | undefined;
 
-    try {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-      email = user?.email;
-    } catch (_) {}
+    const attendance = await prisma.attendance.findFirst({
+      where: { userId, date: today },
+    });
 
-    try {
-      const sheetStatus = await getTodayStatusFromSheet(userId, email);
-      return res.status(200).json({
-        success: true,
-        marked: Boolean(sheetStatus),
-        checkedIn: Boolean(sheetStatus),
-        checkedOut: Boolean(sheetStatus?.checkOutAt),
-        attendance: sheetStatus ?? null,
-      });
-    } catch (_) {
-      const attendance = await prisma.attendance.findFirst({
-        where: { userId, date: today },
-      });
-      return res.status(200).json({
-        success: true,
-        marked: Boolean(attendance),
-        checkedIn: Boolean(attendance),
-        checkedOut: Boolean(attendance?.checkOutAt),
-        attendance: attendance ?? null,
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      marked: Boolean(attendance),
+      checkedIn: Boolean(attendance),
+      checkedOut: Boolean(attendance?.checkOutAt),
+      attendance: attendance ?? null,
+    });
   } catch (error: any) {
     console.error("Get today status error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance status", error: error.message });
@@ -157,24 +128,14 @@ export const getTodayStatus = async (req: AuthRequest, res: Response) => {
 export const getMyAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    let email: string | undefined;
 
-    try {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-      email = user?.email;
-    } catch (_) {}
+    const attendances = await prisma.attendance.findMany({
+      where: { userId },
+      orderBy: { markedAt: "desc" },
+      take: 90,
+    });
 
-    try {
-      const attendances = await getMyAttendanceFromSheet(userId, email);
-      return res.status(200).json({ success: true, attendances });
-    } catch (_) {
-      const attendances = await prisma.attendance.findMany({
-        where: { userId },
-        orderBy: { markedAt: "desc" },
-        take: 90,
-      });
-      return res.status(200).json({ success: true, attendances });
-    }
+    return res.status(200).json({ success: true, attendances });
   } catch (error: any) {
     console.error("Get my attendance error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance history", error: error.message });
@@ -185,21 +146,14 @@ export const getAllAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const { date } = req.query;
 
-    try {
-      const attendances = await getAllAttendanceFromSheet(typeof date === "string" ? date : undefined);
-      return res.status(200).json({ success: true, attendances });
-    } catch (_) {
-      const today = getISTDate();
-      const filterDate = typeof date === "string" ? date : undefined;
+    const attendances = await prisma.attendance.findMany({
+      where: date ? { date: String(date) } : {},
+      orderBy: { markedAt: "desc" },
+      take: 500,
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+    });
 
-      const attendances = await prisma.attendance.findMany({
-        where: filterDate ? { date: filterDate } : {},
-        orderBy: { markedAt: "desc" },
-        take: 500,
-        include: { user: { select: { id: true, fullName: true, email: true } } },
-      });
-      return res.status(200).json({ success: true, attendances });
-    }
+    return res.status(200).json({ success: true, attendances });
   } catch (error: any) {
     console.error("Get all attendance error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance records", error: error.message });
