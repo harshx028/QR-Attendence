@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import QRCode from "qrcode";
 import jwt from "jsonwebtoken";
 import argon2 from "argon2";
 import prisma from "../services/prismaClient";
@@ -133,9 +134,15 @@ export const getQRData = async (req: Request, res: Response) => {
     if (!tokenRecord) {
       return res.status(404).json({ error: "Token not found" });
     }
+    const qrDataUri = await QRCode.toDataURL(tokenRecord.value, {
+      width: 360,
+      margin: 2,
+      color: { dark: "#4F46E5", light: "#FFFFFF" },
+    });
     return res.json({
       token: tokenRecord.value,
       updatedAt: tokenRecord.updatedAt.toISOString(),
+      qrDataUri,
     });
   } catch (error) {
     console.error("Error fetching QR data:", error);
@@ -154,6 +161,12 @@ export const renderQRPage = async (req: Request, res: Response) => {
         .status(404)
         .send("Attendance token not found. Please wait for the cron job to run.");
     }
+
+    const qrDataUri = await QRCode.toDataURL(tokenRecord.value, {
+      width: 360,
+      margin: 2,
+      color: { dark: "#4F46E5", light: "#FFFFFF" },
+    });
 
     const updatedAt = tokenRecord.updatedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
     const updatedAtMs = tokenRecord.updatedAt.getTime();
@@ -177,8 +190,9 @@ export const renderQRPage = async (req: Request, res: Response) => {
       text-align: center; max-width: 500px; width: 100%;
     }
     h1 { margin: 0 0 8px; font-weight: 800; letter-spacing: -.5px; }
-    .subtitle { color: #64748B; margin: 0 0 28px; }
-    #qr-canvas { border: 12px solid #EEF2FF; border-radius: 24px; display: block; margin: 0 auto 20px; }
+    .subtitle { color: #64748B; margin: 0 0 24px; }
+    #qr-img { border: 12px solid #EEF2FF; border-radius: 24px; display: block;
+      margin: 0 auto 20px; width: 360px; height: 360px; }
     .timer-row {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       margin-bottom: 8px;
@@ -206,7 +220,7 @@ export const renderQRPage = async (req: Request, res: Response) => {
   <div class="card">
     <h1>Scan for Attendance</h1>
     <p class="subtitle">Position the QR code within the app's scanner</p>
-    <canvas id="qr-canvas"></canvas>
+    <img id="qr-img" src="${qrDataUri}" alt="Attendance QR Code">
     <div class="timer-row">
       <span class="timer-label">Next refresh in</span>
       <span id="timer" class="timer-high">—</span>
@@ -216,21 +230,13 @@ export const renderQRPage = async (req: Request, res: Response) => {
     <a class="logout" href="/attendance/qr/logout">Sign out</a>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     var currentToken = ${JSON.stringify(tokenRecord.value)};
     var updatedAtMs  = ${updatedAtMs};
-    var canvas       = document.getElementById('qr-canvas');
+    var imgEl        = document.getElementById('qr-img');
     var timerEl      = document.getElementById('timer');
     var statusEl     = document.getElementById('status');
     var updatedAtEl  = document.getElementById('updated-at');
-
-    function renderQR(token) {
-      QRCode.toCanvas(canvas, token, {
-        width: 360, margin: 2,
-        color: { dark: '#4F46E5', light: '#FFFFFF' }
-      }, function(err) { if (err) console.error(err); });
-    }
 
     function updateTimer() {
       var elapsed   = (Date.now() - updatedAtMs) / 1000;
@@ -252,7 +258,7 @@ export const renderQRPage = async (req: Request, res: Response) => {
         if (data.token && data.token !== currentToken) {
           currentToken = data.token;
           updatedAtMs  = new Date(data.updatedAt).getTime();
-          renderQR(data.token);
+          imgEl.src    = data.qrDataUri;
           updatedAtEl.textContent = 'Last updated: ' +
             new Date(data.updatedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
         }
@@ -263,7 +269,6 @@ export const renderQRPage = async (req: Request, res: Response) => {
       }
     }
 
-    renderQR(currentToken);
     updateTimer();
     setInterval(updateTimer, 1000);
     setInterval(poll, 5000);
