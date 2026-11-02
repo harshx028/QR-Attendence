@@ -82,6 +82,12 @@ export const processLogin = async (req: Request, res: Response) => {
       );
     }
 
+    if (user.role !== "QR_KIOSK") {
+      return res.redirect(
+        "/attendance/qr/login?error=" + encodeURIComponent("This account is not authorised to access the QR kiosk")
+      );
+    }
+
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "8h",
     });

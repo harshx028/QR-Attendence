@@ -100,6 +100,13 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    if (user.role === 'QR_KIOSK') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account can only be used at the QR kiosk display'
+      });
+    }
+
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(200).json({
