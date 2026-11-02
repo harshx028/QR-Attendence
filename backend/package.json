@@ -34,6 +34,7 @@
     "dev": "tsx watch index.ts",
     "start": "tsx index.ts",
     "seed": "tsx prisma/seed.ts",
+    "create-kiosk": "tsx scripts/create-kiosk.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
