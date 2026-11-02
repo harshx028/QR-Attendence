@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import QRCode from "qrcode";
 import jwt from "jsonwebtoken";
 import argon2 from "argon2";
 import prisma from "../services/prismaClient";
@@ -120,6 +119,24 @@ export const authenticateKiosk = (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const getQRData = async (req: Request, res: Response) => {
+  try {
+    const tokenRecord = await prisma.attendanceToken.findUnique({
+      where: { name: "attendance token" },
+    });
+    if (!tokenRecord) {
+      return res.status(404).json({ error: "Token not found" });
+    }
+    return res.json({
+      token: tokenRecord.value,
+      updatedAt: tokenRecord.updatedAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("Error fetching QR data:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const renderQRPage = async (req: Request, res: Response) => {
   try {
     const tokenRecord = await prisma.attendanceToken.findUnique({
@@ -132,13 +149,8 @@ export const renderQRPage = async (req: Request, res: Response) => {
         .send("Attendance token not found. Please wait for the cron job to run.");
     }
 
-    const qrDataUri = await QRCode.toDataURL(tokenRecord.value, {
-      width: 400,
-      margin: 2,
-      color: { dark: "#4F46E5", light: "#FFFFFF" },
-    });
-
     const updatedAt = tokenRecord.updatedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    const updatedAtMs = tokenRecord.updatedAt.getTime();
 
     res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -146,7 +158,6 @@ export const renderQRPage = async (req: Request, res: Response) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Attendance QR Kiosk</title>
-  <meta http-equiv="refresh" content="30">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body {
@@ -157,13 +168,29 @@ export const renderQRPage = async (req: Request, res: Response) => {
     .card {
       background: white; padding: 40px; border-radius: 32px;
       box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04);
-      text-align: center; max-width: 500px;
+      text-align: center; max-width: 500px; width: 100%;
     }
-    h1 { margin-bottom: 8px; font-weight: 800; letter-spacing: -.5px; }
-    p  { color: #64748B; margin-bottom: 32px; }
-    img { border: 12px solid #EEF2FF; border-radius: 24px; margin-bottom: 24px; }
-    .footer { font-size: 12px; color: #94A3B8; margin-top: 24px; }
-    .refresh-hint { font-size: 14px; color: #4F46E5; font-weight: 600; }
+    h1 { margin: 0 0 8px; font-weight: 800; letter-spacing: -.5px; }
+    .subtitle { color: #64748B; margin: 0 0 28px; }
+    #qr-canvas { border: 12px solid #EEF2FF; border-radius: 24px; display: block; margin: 0 auto 20px; }
+    .timer-row {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .timer-label { font-size: 13px; color: #64748B; }
+    #timer {
+      font-size: 22px; font-weight: 900; letter-spacing: -.5px;
+      min-width: 52px; transition: color .4s;
+    }
+    .timer-high   { color: #4F46E5; }
+    .timer-medium { color: #D97706; }
+    .timer-low    { color: #DC2626; }
+    #status {
+      font-size: 13px; color: #B45309; background: #FEF3C7;
+      border: 1px solid #FDE68A; border-radius: 8px; padding: 8px 14px;
+      margin-bottom: 8px; display: none;
+    }
+    .footer { font-size: 12px; color: #94A3B8; margin-top: 8px; }
     .logout { display: inline-block; margin-top: 16px; font-size: 13px; color: #94A3B8;
       text-decoration: none; }
     .logout:hover { color: #64748B; }
@@ -172,12 +199,69 @@ export const renderQRPage = async (req: Request, res: Response) => {
 <body>
   <div class="card">
     <h1>Scan for Attendance</h1>
-    <p>Position the QR code within the app's scanner</p>
-    <img src="${qrDataUri}" alt="Attendance QR Code">
-    <div class="refresh-hint">Token refreshes every minute</div>
-    <div class="footer">Last updated: ${updatedAt}</div>
+    <p class="subtitle">Position the QR code within the app's scanner</p>
+    <canvas id="qr-canvas"></canvas>
+    <div class="timer-row">
+      <span class="timer-label">Next refresh in</span>
+      <span id="timer" class="timer-high">—</span>
+    </div>
+    <div id="status"></div>
+    <div class="footer" id="updated-at">Last updated: ${updatedAt}</div>
     <a class="logout" href="/attendance/qr/logout">Sign out</a>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    var currentToken = ${JSON.stringify(tokenRecord.value)};
+    var updatedAtMs  = ${updatedAtMs};
+    var canvas       = document.getElementById('qr-canvas');
+    var timerEl      = document.getElementById('timer');
+    var statusEl     = document.getElementById('status');
+    var updatedAtEl  = document.getElementById('updated-at');
+
+    function renderQR(token) {
+      QRCode.toCanvas(canvas, token, {
+        width: 360, margin: 2,
+        color: { dark: '#4F46E5', light: '#FFFFFF' }
+      }, function(err) { if (err) console.error(err); });
+    }
+
+    function updateTimer() {
+      var elapsed   = (Date.now() - updatedAtMs) / 1000;
+      var remaining = Math.max(0, 60 - Math.floor(elapsed));
+      timerEl.textContent = remaining + 's';
+      timerEl.className = remaining > 20 ? 'timer-high'
+                        : remaining > 10 ? 'timer-medium'
+                        : 'timer-low';
+    }
+
+    async function poll() {
+      try {
+        var res = await fetch('/attendance/qr/data');
+        if (res.status === 401 || res.status === 403) {
+          window.location.href = '/attendance/qr/login';
+          return;
+        }
+        var data = await res.json();
+        if (data.token && data.token !== currentToken) {
+          currentToken = data.token;
+          updatedAtMs  = new Date(data.updatedAt).getTime();
+          renderQR(data.token);
+          updatedAtEl.textContent = 'Last updated: ' +
+            new Date(data.updatedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        }
+        if (statusEl.style.display !== 'none') statusEl.style.display = 'none';
+      } catch (err) {
+        statusEl.textContent = '⚠ Connection lost — retrying…';
+        statusEl.style.display = 'block';
+      }
+    }
+
+    renderQR(currentToken);
+    updateTimer();
+    setInterval(updateTimer, 1000);
+    setInterval(poll, 5000);
+  </script>
 </body>
 </html>`);
   } catch (error) {

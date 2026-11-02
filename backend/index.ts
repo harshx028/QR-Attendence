@@ -15,6 +15,7 @@ import {
   logoutKiosk,
   authenticateKiosk,
   renderQRPage,
+  getQRData,
 } from './controllers/qrController.ts';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/v1/attendance', attendanceRoutes);
 app.get('/attendance/qr/login', showLoginPage);
 app.post('/attendance/qr/login', processLogin);
 app.get('/attendance/qr/logout', logoutKiosk);
+app.get('/attendance/qr/data', authenticateKiosk, getQRData);
 app.get('/attendance/qr', authenticateKiosk, renderQRPage);
 
 app.get('/health', (_req: Request, res: Response) => {
