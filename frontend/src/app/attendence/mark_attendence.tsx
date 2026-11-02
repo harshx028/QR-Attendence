@@ -9,7 +9,7 @@ import { markAttendance, getTodayStatus } from "@/api/attendance.api";
 type Status = "checking" | "confirm_checkin" | "confirm_checkout" | "success" | "done" | "error";
 
 export default function MarkAttendence() {
-  const { token } = useLocalSearchParams<{ token?: string }>();
+  const { token, remarks } = useLocalSearchParams<{ token?: string; remarks?: string }>();
   const [status, setStatus] = useState<Status>("checking");
   const [eventType, setEventType] = useState<"CHECK-IN" | "CHECK-OUT">("CHECK-IN");
   const [message, setMessage] = useState("");
@@ -53,7 +53,7 @@ export default function MarkAttendence() {
     }
     setIsSubmitting(true);
     const { lat, lng } = await getLocation();
-    const res = await markAttendance(token, lat, lng);
+    const res = await markAttendance(token, lat, lng, remarks || null);
     setIsSubmitting(false);
 
     if (res?.success) {
@@ -97,6 +97,12 @@ export default function MarkAttendence() {
                 ? "Tap below to record your check-out time and location."
                 : "Tap below to record your check-in time and location."}
             </Text>
+            {!isCheckout && remarks ? (
+              <View style={styles.remarksBadge}>
+                <Text style={styles.remarksLabel}>Remark</Text>
+                <Text style={styles.remarksText}>{remarks}</Text>
+              </View>
+            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.button,
@@ -246,4 +252,12 @@ const styles = StyleSheet.create({
   },
   successIconIn: { color: "#059669", fontWeight: "900", fontSize: 20 },
   successIconOut: { color: "#DC2626", fontWeight: "900", fontSize: 20 },
+  remarksBadge: {
+    backgroundColor: "#FEF9C3",
+    borderRadius: ROUNDNESS.md,
+    padding: SPACING.sm,
+    width: "100%",
+  },
+  remarksLabel: { fontSize: 11, fontWeight: "700", color: "#92400E", marginBottom: 2 },
+  remarksText: { fontSize: 13, color: "#78350F" },
 });

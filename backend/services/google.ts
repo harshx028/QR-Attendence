@@ -13,6 +13,16 @@ export interface SaveToSheetData {
   eventTime: Date;
   lat?: number | null;
   lng?: number | null;
+  remarks?: string | null;
+}
+
+export interface SaveGuestToSheetData {
+  fullName: string;
+  phone: string;
+  eventType: "CHECK-IN" | "CHECK-OUT";
+  eventTime: Date;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const getAuthAndSheets = () => {
@@ -54,19 +64,20 @@ const mapsLink = (lat?: number | null, lng?: number | null): string => {
   return `=HYPERLINK("https://maps.google.com/?q=${lat},${lng}","📍 View Location")`;
 };
 
-const HEADERS = ["Full Name", "Email", "User ID", "Date", "Event", "Time (IST)", "Location"];
+const HEADERS = ["Full Name", "Email", "User ID", "Date", "Event", "Time (IST)", "Location", "Remarks"];
+const GUEST_HEADERS = ["Full Name", "Phone", "Date", "Event", "Time (IST)", "Location"];
 
 const ensureTabExists = async (
   sheets: ReturnType<typeof google.sheets>,
   spreadsheetId: string,
-  tabName: string
+  tabName: string,
+  headers: string[]
 ) => {
   const meta = await sheets.spreadsheets.get({ spreadsheetId });
   const existing = (meta.data.sheets || []).map((s) => s.properties?.title);
 
   if (existing.includes(tabName)) return;
 
-  // Create tab
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
@@ -74,12 +85,12 @@ const ensureTabExists = async (
     },
   });
 
-  // Write header row
+  const endCol = String.fromCharCode(64 + headers.length);
   await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: `${tabName}!A1:G1`,
+    range: `${tabName}!A1:${endCol}1`,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [HEADERS] },
+    requestBody: { values: [headers] },
   });
 
   console.log(`[SHEET] Created tab "${tabName}" with headers`);
@@ -90,14 +101,14 @@ export const saveToSheet = async (data: SaveToSheetData) => {
     const { sheets, spreadsheetId } = getAuthAndSheets();
     const tabName = getMonthTabName(data.eventTime);
 
-    await ensureTabExists(sheets, spreadsheetId, tabName);
+    await ensureTabExists(sheets, spreadsheetId, tabName, HEADERS);
 
     const dateStr = data.eventTime.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const timeIST = data.eventTime.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${tabName}!A:G`,
+      range: `${tabName}!A:H`,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
@@ -109,6 +120,7 @@ export const saveToSheet = async (data: SaveToSheetData) => {
           data.eventType,
           timeIST,
           mapsLink(data.lat, data.lng),
+          data.remarks || "",
         ]],
       },
     });
@@ -116,6 +128,40 @@ export const saveToSheet = async (data: SaveToSheetData) => {
     console.log(`[SHEET] ${data.eventType} logged to tab "${tabName}"`);
   } catch (error: any) {
     console.error("[SHEET] Error saving to Google Sheet:", error.message);
+    throw error;
+  }
+};
+
+export const saveGuestToSheet = async (data: SaveGuestToSheetData) => {
+  try {
+    const { sheets, spreadsheetId } = getAuthAndSheets();
+    const tabName = `Guests - ${getMonthTabName(data.eventTime)}`;
+
+    await ensureTabExists(sheets, spreadsheetId, tabName, GUEST_HEADERS);
+
+    const dateStr = data.eventTime.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    const timeIST = data.eventTime.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${tabName}!A:F`,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: {
+        values: [[
+          data.fullName,
+          data.phone,
+          dateStr,
+          data.eventType,
+          timeIST,
+          mapsLink(data.lat, data.lng),
+        ]],
+      },
+    });
+
+    console.log(`[SHEET] Guest ${data.eventType} logged to tab "${tabName}"`);
+  } catch (error: any) {
+    console.error("[SHEET] Error saving guest to Google Sheet:", error.message);
     throw error;
   }
 };

@@ -1,19 +1,23 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Text, View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { COLORS, SPACING, ROUNDNESS } from "@/constants/Theme";
 
 const ScanQr = () => {
+  const { remarks } = useLocalSearchParams<{ remarks?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const scannedRef = useRef(false);
 
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
-    router.replace({ pathname: "/attendence/mark_attendence", params: { token: data } });
+    router.replace({
+      pathname: "/attendence/mark_attendence",
+      params: { token: data, remarks: remarks ?? "" },
+    });
   };
 
   if (!permission) {

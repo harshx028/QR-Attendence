@@ -45,8 +45,24 @@ model Attendance {
   checkInLng  Float?
   checkOutLat Float?
   checkOutLng Float?
+  remarks     String?
 
   @@index([userId])
   @@index([userId, date])
+}
+
+model GuestAttendance {
+  id          String    @id @default(uuid())
+  fullName    String
+  phone       String
+  date        String
+  markedAt    DateTime  @default(now())
+  checkOutAt  DateTime?
+  checkInLat  Float?
+  checkInLng  Float?
+  checkOutLat Float?
+  checkOutLng Float?
+
+  @@index([phone, date])
 }
 

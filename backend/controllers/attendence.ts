@@ -1,7 +1,7 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import prisma from "../services/prismaClient.ts";
 import { AuthRequest } from "../types/express.ts";
-import { saveToSheet } from "../services/google.ts";
+import { saveToSheet, saveGuestToSheet } from "../services/google.ts";
 
 const getISTDate = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -9,7 +9,7 @@ const getISTDate = () =>
 export const markAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { token, lat, lng } = req.body;
+    const { token, lat, lng, remarks } = req.body;
 
     if (!token) {
       return res.status(400).json({ success: false, message: "QR token is required" });
@@ -40,6 +40,7 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
           markedAt: now,
           checkInLat: lat ?? null,
           checkInLng: lng ?? null,
+          remarks: remarks || null,
         },
         include: { user: { select: { fullName: true, email: true } } },
       });
@@ -52,6 +53,7 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
         eventTime: now,
         lat: lat ?? null,
         lng: lng ?? null,
+        remarks: remarks || null,
       }).catch((e) => console.error("[SHEET] Failed to log check-in:", e.message));
 
       return res.status(201).json({
@@ -139,6 +141,99 @@ export const getMyAttendance = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error("Get my attendance error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance history", error: error.message });
+  }
+};
+
+export const markGuestAttendance = async (req: Request, res: Response) => {
+  try {
+    const { token, fullName, phone, lat, lng } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: "QR token is required" });
+    }
+    if (!fullName || !phone) {
+      return res.status(400).json({ success: false, message: "Name and phone are required" });
+    }
+
+    const tokenRecord = await prisma.attendanceToken.findUnique({
+      where: { name: "attendance token" },
+    });
+
+    if (!tokenRecord || tokenRecord.value !== token) {
+      return res.status(400).json({ success: false, message: "Invalid or expired QR code" });
+    }
+
+    const today = getISTDate();
+    const now = new Date();
+
+    const existing = await prisma.guestAttendance.findFirst({
+      where: { phone, date: today },
+    });
+
+    if (!existing) {
+      const attendance = await prisma.guestAttendance.create({
+        data: {
+          fullName,
+          phone,
+          date: today,
+          markedAt: now,
+          checkInLat: lat ?? null,
+          checkInLng: lng ?? null,
+        },
+      });
+
+      saveGuestToSheet({
+        fullName,
+        phone,
+        eventType: "CHECK-IN",
+        eventTime: now,
+        lat: lat ?? null,
+        lng: lng ?? null,
+      }).catch((e) => console.error("[SHEET] Failed to log guest check-in:", e.message));
+
+      return res.status(201).json({
+        success: true,
+        eventType: "CHECK-IN",
+        message: "Check-in recorded successfully",
+        attendance,
+      });
+    }
+
+    if (existing.checkOutAt) {
+      return res.status(409).json({
+        success: false,
+        message: "Already checked in and checked out for today",
+        attendance: existing,
+      });
+    }
+
+    const updated = await prisma.guestAttendance.update({
+      where: { id: existing.id },
+      data: {
+        checkOutAt: now,
+        checkOutLat: lat ?? null,
+        checkOutLng: lng ?? null,
+      },
+    });
+
+    saveGuestToSheet({
+      fullName,
+      phone,
+      eventType: "CHECK-OUT",
+      eventTime: now,
+      lat: lat ?? null,
+      lng: lng ?? null,
+    }).catch((e) => console.error("[SHEET] Failed to log guest check-out:", e.message));
+
+    return res.status(200).json({
+      success: true,
+      eventType: "CHECK-OUT",
+      message: "Check-out recorded successfully",
+      attendance: updated,
+    });
+  } catch (error: any) {
+    console.error("Mark guest attendance error:", error);
+    res.status(500).json({ success: false, message: "Error marking attendance", error: error.message });
   }
 };
 

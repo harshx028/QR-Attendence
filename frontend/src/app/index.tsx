@@ -147,7 +147,7 @@ export default function Dashboard() {
                   pressed && styles.buttonPressed,
                   { marginTop: SPACING.lg },
                 ]}
-                onPress={() => router.push("/scan_qr")}
+                onPress={() => router.push("/attendence/remarks")}
               >
                 <Text style={styles.mainButtonText}>Scan to Check In</Text>
               </Pressable>

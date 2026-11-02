@@ -125,6 +125,13 @@ const LoginPage = () => {
               </Pressable>
             </View>
 
+            <Pressable
+              style={({ pressed }) => [styles.guestButton, pressed && styles.buttonPressed]}
+              onPress={() => router.push("/guest")}
+            >
+              <Text style={styles.guestButtonText}>Continue without login</Text>
+            </Pressable>
+
             <View style={styles.footer}>
               <Text style={styles.footerText}>New to the platform?</Text>
               <Pressable onPress={() => router.push("/auth/signup")}>
@@ -229,6 +236,19 @@ const styles = StyleSheet.create({
     borderRadius: ROUNDNESS.md,
     alignItems: "center",
     marginTop: SPACING.sm,
+  },
+  guestButton: {
+    borderWidth: 1.5,
+    borderColor: COLORS.outline,
+    padding: SPACING.md,
+    borderRadius: ROUNDNESS.md,
+    alignItems: "center",
+    marginTop: SPACING.sm,
+  },
+  guestButtonText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 15,
+    fontWeight: "600",
   },
   buttonPressed: {
     opacity: 0.9,

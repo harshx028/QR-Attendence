@@ -27,16 +27,42 @@ export type TodayStatus = {
   } | null;
 };
 
-const markAttendance = async (token: string, lat?: number | null, lng?: number | null) => {
+const markAttendance = async (
+  token: string,
+  lat?: number | null,
+  lng?: number | null,
+  remarks?: string | null
+) => {
   try {
     const res = await api.post("/api/v1/attendance/mark", {
       token,
       lat: lat ?? null,
       lng: lng ?? null,
+      remarks: remarks || null,
     });
     return res.data;
   } catch (error: any) {
     console.error("Mark attendance failed:", error?.response?.data || error.message);
+    return error?.response?.data || { success: false, message: "Something went wrong" };
+  }
+};
+
+const markGuestAttendance = async (params: {
+  token: string;
+  fullName: string;
+  phone: string;
+  lat?: number | null;
+  lng?: number | null;
+}) => {
+  try {
+    const res = await api.post("/api/v1/attendance/guest/mark", {
+      ...params,
+      lat: params.lat ?? null,
+      lng: params.lng ?? null,
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error("Mark guest attendance failed:", error?.response?.data || error.message);
     return error?.response?.data || { success: false, message: "Something went wrong" };
   }
 };
@@ -71,4 +97,4 @@ const getAllAttendance = async (date?: string) => {
   }
 };
 
-export { markAttendance, getTodayStatus, getMyAttendance, getAllAttendance };
+export { markAttendance, markGuestAttendance, getTodayStatus, getMyAttendance, getAllAttendance };
