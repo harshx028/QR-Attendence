@@ -16,6 +16,8 @@ import {
   authenticateKiosk,
   renderQRPage,
   getQRData,
+  showEntryPage,
+  processEntryForm,
 } from './controllers/qrController.ts';
 
 const app = express();
@@ -31,6 +33,10 @@ app.use(cookieParser());
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
+
+// Public guest entry form (no login required)
+app.get('/attendance/entry', showEntryPage);
+app.post('/attendance/entry', processEntryForm);
 
 // QR kiosk web pages
 app.get('/attendance/qr/login', showLoginPage);

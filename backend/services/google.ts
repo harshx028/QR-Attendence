@@ -19,6 +19,9 @@ export interface SaveToSheetData {
 export interface SaveGuestToSheetData {
   fullName: string;
   phone: string;
+  email?: string | null;
+  address?: string | null;
+  purpose?: string | null;
   eventType: "CHECK-IN" | "CHECK-OUT";
   eventTime: Date;
   lat?: number | null;
@@ -65,7 +68,7 @@ const mapsLink = (lat?: number | null, lng?: number | null): string => {
 };
 
 const HEADERS = ["Full Name", "Email", "User ID", "Date", "Event", "Time (IST)", "Location", "Remarks"];
-const GUEST_HEADERS = ["Full Name", "Phone", "Date", "Event", "Time (IST)", "Location"];
+const GUEST_HEADERS = ["Full Name", "Phone", "Email", "Address", "Purpose", "Date", "Event", "Time (IST)", "Location"];
 
 const ensureTabExists = async (
   sheets: ReturnType<typeof google.sheets>,
@@ -144,13 +147,16 @@ export const saveGuestToSheet = async (data: SaveGuestToSheetData) => {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${tabName}!A:F`,
+      range: `${tabName}!A:I`,
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: [[
           data.fullName,
           data.phone,
+          data.email || "",
+          data.address || "",
+          data.purpose || "",
           dateStr,
           data.eventType,
           timeIST,

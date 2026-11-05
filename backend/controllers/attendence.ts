@@ -146,7 +146,7 @@ export const getMyAttendance = async (req: AuthRequest, res: Response) => {
 
 export const markGuestAttendance = async (req: Request, res: Response) => {
   try {
-    const { token, fullName, phone, lat, lng } = req.body;
+    const { token, fullName, phone, email, address, purpose, lat, lng } = req.body;
 
     if (!token) {
       return res.status(400).json({ success: false, message: "QR token is required" });
@@ -175,6 +175,9 @@ export const markGuestAttendance = async (req: Request, res: Response) => {
         data: {
           fullName,
           phone,
+          email: email || null,
+          address: address || null,
+          purpose: purpose || null,
           date: today,
           markedAt: now,
           checkInLat: lat ?? null,
@@ -185,6 +188,9 @@ export const markGuestAttendance = async (req: Request, res: Response) => {
       saveGuestToSheet({
         fullName,
         phone,
+        email: email || null,
+        address: address || null,
+        purpose: purpose || null,
         eventType: "CHECK-IN",
         eventTime: now,
         lat: lat ?? null,
@@ -217,8 +223,11 @@ export const markGuestAttendance = async (req: Request, res: Response) => {
     });
 
     saveGuestToSheet({
-      fullName,
-      phone,
+      fullName: existing.fullName,
+      phone: existing.phone,
+      email: existing.email,
+      address: existing.address,
+      purpose: existing.purpose,
       eventType: "CHECK-OUT",
       eventTime: now,
       lat: lat ?? null,

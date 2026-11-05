@@ -56,6 +56,10 @@ model GuestAttendance {
   id          String    @id @default(uuid())
   fullName    String
   phone       String
+  email       String?
+  address     String?
+  purpose     String?
+  remarks     String?
   date        String
   markedAt    DateTime  @default(now())
   checkOutAt  DateTime?

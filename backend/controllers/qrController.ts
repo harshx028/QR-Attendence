@@ -150,6 +150,272 @@ export const getQRData = async (req: Request, res: Response) => {
   }
 };
 
+export const showEntryPage = (req: Request, res: Response) => {
+  const success = req.query.success === "1";
+  const name = req.query.name ? decodeURIComponent(req.query.name as string) : "";
+  const error = req.query.error ? decodeURIComponent(req.query.error as string) : null;
+
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Entry — Durga Foundation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh; margin: 0; background: #F8FAFC; color: #0F172A;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 32px 16px;
+    }
+    .wrapper { width: 100%; max-width: 560px; }
+    .header { text-align: center; margin-bottom: 28px; }
+    .header .logo { font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: #4F46E5; margin-bottom: 6px; }
+    .header h1 { margin: 0 0 6px; font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; }
+    .header p { color: #64748B; margin: 0; font-size: 15px; }
+    .card {
+      background: white; padding: 32px; border-radius: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    }
+    .success-banner {
+      background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 16px;
+      padding: 20px 24px; text-align: center; margin-bottom: 24px;
+    }
+    .success-banner .icon { font-size: 2.4rem; margin-bottom: 8px; }
+    .success-banner h2 { margin: 0 0 4px; font-size: 1.1rem; color: #15803D; }
+    .success-banner p { margin: 0; color: #166534; font-size: 14px; }
+    .error-banner {
+      background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 12px;
+      padding: 12px 16px; margin-bottom: 20px; color: #DC2626; font-size: 14px;
+    }
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: #94A3B8; margin: 24px 0 12px;
+    }
+    .section-title:first-of-type { margin-top: 0; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field label { font-size: 13px; font-weight: 600; color: #374151; }
+    .field label .req { color: #EF4444; margin-left: 2px; }
+    .field input, .field select, .field textarea {
+      padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px;
+      font-size: 15px; font-family: inherit; outline: none; color: #0F172A;
+      background: #FAFAFA; transition: border-color .15s, background .15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: #4F46E5; background: white;
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    .field .hint { font-size: 12px; color: #94A3B8; }
+    .divider { border: none; border-top: 1px solid #F1F5F9; margin: 8px 0 20px; }
+    .submit-btn {
+      width: 100%; padding: 14px; background: #4F46E5; color: white;
+      border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background .2s, transform .1s; margin-top: 8px;
+      letter-spacing: .2px;
+    }
+    .submit-btn:hover { background: #4338CA; }
+    .submit-btn:active { transform: scale(.99); }
+    .submit-btn:disabled { background: #A5B4FC; cursor: not-allowed; }
+    .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 20px; }
+    .new-entry-btn {
+      display: block; width: 100%; padding: 13px; background: white;
+      color: #4F46E5; border: 1.5px solid #C7D2FE; border-radius: 12px;
+      font-size: 15px; font-weight: 600; cursor: pointer; text-align: center;
+      text-decoration: none; margin-top: 12px; transition: background .15s;
+    }
+    .new-entry-btn:hover { background: #EEF2FF; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="logo">Durga Foundation</div>
+      <h1>Guest Entry</h1>
+      <p>Please fill in your details to register your visit</p>
+    </div>
+
+    <div class="card">
+      ${success ? `
+      <div class="success-banner">
+        <div class="icon">✅</div>
+        <h2>Entry Recorded!</h2>
+        <p>Welcome, <strong>${name}</strong>. Your attendance has been saved.</p>
+      </div>
+      <a href="/attendance/entry" class="new-entry-btn">+ Register Another Entry</a>
+      ` : `
+      ${error ? `<div class="error-banner">⚠ ${error}</div>` : ""}
+      <form method="POST" action="/attendance/entry" id="entry-form">
+        <div class="section-title">Personal Information</div>
+        <div class="row">
+          <div class="field">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" name="fullName" placeholder="e.g. Ramesh Kumar" required autocomplete="name" />
+          </div>
+          <div class="field">
+            <label>Phone Number <span class="req">*</span></label>
+            <input type="tel" name="phone" placeholder="e.g. 9876543210" required autocomplete="tel"
+              pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" placeholder="e.g. ramesh@example.com" autocomplete="email" />
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">Address</div>
+        <div class="field">
+          <label>Street / House No.</label>
+          <input type="text" name="street" placeholder="House no., street name" autocomplete="address-line1" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>City / Town <span class="req">*</span></label>
+            <input type="text" name="city" placeholder="e.g. Lucknow" required autocomplete="address-level2" />
+          </div>
+          <div class="field">
+            <label>State</label>
+            <select name="state" autocomplete="address-level1">
+              <option value="">— Select State —</option>
+              <option>Andhra Pradesh</option><option>Arunachal Pradesh</option>
+              <option>Assam</option><option>Bihar</option><option>Chhattisgarh</option>
+              <option>Goa</option><option>Gujarat</option><option>Haryana</option>
+              <option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option>
+              <option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option>
+              <option>Manipur</option><option>Meghalaya</option><option>Mizoram</option>
+              <option>Nagaland</option><option>Odisha</option><option>Punjab</option>
+              <option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option>
+              <option>Telangana</option><option>Tripura</option><option selected>Uttar Pradesh</option>
+              <option>Uttarakhand</option><option>West Bengal</option>
+              <option>Andaman and Nicobar Islands</option><option>Chandigarh</option>
+              <option>Dadra and Nagar Haveli and Daman and Diu</option>
+              <option>Delhi</option><option>Jammu and Kashmir</option>
+              <option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>PIN Code</label>
+          <input type="text" name="pincode" placeholder="e.g. 226001" pattern="[1-9][0-9]{5}"
+            title="Enter a valid 6-digit PIN code" autocomplete="postal-code" maxlength="6" />
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">Visit Details</div>
+        <div class="field">
+          <label>Purpose of Visit <span class="req">*</span></label>
+          <select name="purpose" required>
+            <option value="">— Select Purpose —</option>
+            <option>Attending Event / Programme</option>
+            <option>Meeting / Appointment</option>
+            <option>Training / Workshop</option>
+            <option>Volunteering</option>
+            <option>Enquiry</option>
+            <option>Donation / Support</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Additional Remarks</label>
+          <textarea name="remarks" placeholder="Any additional information…"></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Register Entry</button>
+      </form>
+      `}
+    </div>
+    <div class="footer">Durga Foundation · Attendance System</div>
+  </div>
+
+  <script>
+    var form = document.getElementById('entry-form');
+    var btn  = document.getElementById('submit-btn');
+    if (form) {
+      form.addEventListener('submit', function() {
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+      });
+    }
+  </script>
+</body>
+</html>`);
+};
+
+export const processEntryForm = async (req: Request, res: Response) => {
+  try {
+    const { fullName, phone, email, street, city, state, pincode, purpose, remarks } = req.body;
+
+    if (!fullName?.trim() || !phone?.trim() || !city?.trim() || !purpose?.trim()) {
+      return res.redirect(
+        "/attendance/entry?error=" + encodeURIComponent("Please fill in all required fields")
+      );
+    }
+
+    const phoneTrimmed = phone.trim().replace(/\D/g, "").slice(-10);
+    if (phoneTrimmed.length !== 10) {
+      return res.redirect(
+        "/attendance/entry?error=" + encodeURIComponent("Please enter a valid 10-digit phone number")
+      );
+    }
+
+    const addressParts = [street, city, state, pincode].filter(Boolean);
+    const address = addressParts.join(", ");
+
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    const now = new Date();
+
+    const existing = await prisma.guestAttendance.findFirst({
+      where: { phone: phoneTrimmed, date: today },
+    });
+
+    if (existing) {
+      return res.redirect(
+        "/attendance/entry?error=" + encodeURIComponent(
+          `An entry for phone ${phoneTrimmed} already exists today. Contact the admin if this is an error.`
+        )
+      );
+    }
+
+    await prisma.guestAttendance.create({
+      data: {
+        fullName: fullName.trim(),
+        phone: phoneTrimmed,
+        email: email?.trim() || null,
+        address: address || null,
+        purpose: purpose.trim(),
+        date: today,
+        markedAt: now,
+        remarks: remarks?.trim() || null,
+      },
+    });
+
+    const { saveGuestToSheet } = await import("../services/google.ts");
+    saveGuestToSheet({
+      fullName: fullName.trim(),
+      phone: phoneTrimmed,
+      email: email?.trim() || null,
+      address: address || null,
+      purpose: purpose.trim(),
+      eventType: "CHECK-IN",
+      eventTime: now,
+    }).catch((e: Error) => console.error("[SHEET] Failed to log manual entry:", e.message));
+
+    return res.redirect(
+      "/attendance/entry?success=1&name=" + encodeURIComponent(fullName.trim())
+    );
+  } catch (error) {
+    console.error("Entry form error:", error);
+    return res.redirect(
+      "/attendance/entry?error=" + encodeURIComponent("Something went wrong, please try again")
+    );
+  }
+};
+
 export const renderQRPage = async (req: Request, res: Response) => {
   try {
     const tokenRecord = await prisma.attendanceToken.findUnique({
