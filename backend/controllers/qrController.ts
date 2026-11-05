@@ -164,79 +164,82 @@ export const showEntryPage = (req: Request, res: Response) => {
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh; margin: 0; background: #F8FAFC; color: #0F172A;
-      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-      padding: 32px 16px;
     }
-    .wrapper { width: 100%; max-width: 560px; }
-    .header { text-align: center; margin-bottom: 28px; }
-    .header .logo { font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
-      text-transform: uppercase; color: #4F46E5; margin-bottom: 6px; }
-    .header h1 { margin: 0 0 6px; font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; }
-    .header p { color: #64748B; margin: 0; font-size: 15px; }
+    .page {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 16px 48px;
+    }
+    .header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 500px; }
+    .header .logo {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: #4F46E5; margin-bottom: 4px;
+    }
+    .header h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; letter-spacing: -.5px; }
+    .header p { color: #64748B; margin: 0; font-size: 14px; }
     .card {
-      background: white; padding: 32px; border-radius: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+      background: white; padding: 24px; border-radius: 20px; width: 100%; max-width: 500px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
     }
     .success-banner {
-      background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 16px;
-      padding: 20px 24px; text-align: center; margin-bottom: 24px;
+      background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 14px;
+      padding: 20px; text-align: center;
     }
-    .success-banner .icon { font-size: 2.4rem; margin-bottom: 8px; }
-    .success-banner h2 { margin: 0 0 4px; font-size: 1.1rem; color: #15803D; }
+    .success-banner .icon { font-size: 2rem; margin-bottom: 6px; }
+    .success-banner h2 { margin: 0 0 4px; font-size: 1rem; color: #15803D; }
     .success-banner p { margin: 0; color: #166534; font-size: 14px; }
     .error-banner {
-      background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 12px;
-      padding: 12px 16px; margin-bottom: 20px; color: #DC2626; font-size: 14px;
+      background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 10px;
+      padding: 11px 14px; margin-bottom: 18px; color: #DC2626; font-size: 14px;
     }
-    .section-title {
-      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-      color: #94A3B8; margin: 24px 0 12px;
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: #94A3B8; margin: 20px 0 10px;
     }
-    .section-title:first-of-type { margin-top: 0; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
-    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .section-label:first-of-type { margin-top: 0; }
+    .divider { border: none; border-top: 1px solid #F1F5F9; margin: 4px 0 16px; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
     .field label { font-size: 13px; font-weight: 600; color: #374151; }
     .field label .req { color: #EF4444; margin-left: 2px; }
     .field input, .field select, .field textarea {
-      padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px;
+      width: 100%; padding: 11px 13px; border: 1.5px solid #E2E8F0; border-radius: 10px;
       font-size: 15px; font-family: inherit; outline: none; color: #0F172A;
       background: #FAFAFA; transition: border-color .15s, background .15s;
+      -webkit-appearance: none; appearance: none;
     }
     .field input:focus, .field select:focus, .field textarea:focus {
-      border-color: #4F46E5; background: white;
+      border-color: #4F46E5; background: #fff;
     }
-    .field textarea { resize: vertical; min-height: 80px; }
-    .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-    .field .hint { font-size: 12px; color: #94A3B8; }
-    .divider { border: none; border-top: 1px solid #F1F5F9; margin: 8px 0 20px; }
+    .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px;
+    }
     .submit-btn {
-      width: 100%; padding: 14px; background: #4F46E5; color: white;
-      border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: background .2s, transform .1s; margin-top: 8px;
-      letter-spacing: .2px;
+      width: 100%; padding: 13px; background: #4F46E5; color: white;
+      border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 6px; letter-spacing: .2px;
+      transition: background .15s;
     }
     .submit-btn:hover { background: #4338CA; }
-    .submit-btn:active { transform: scale(.99); }
     .submit-btn:disabled { background: #A5B4FC; cursor: not-allowed; }
-    .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 20px; }
     .new-entry-btn {
-      display: block; width: 100%; padding: 13px; background: white;
-      color: #4F46E5; border: 1.5px solid #C7D2FE; border-radius: 12px;
-      font-size: 15px; font-weight: 600; cursor: pointer; text-align: center;
-      text-decoration: none; margin-top: 12px; transition: background .15s;
+      display: block; width: 100%; padding: 12px; background: white; margin-top: 10px;
+      color: #4F46E5; border: 1.5px solid #C7D2FE; border-radius: 11px;
+      font-size: 15px; font-weight: 600; text-align: center; text-decoration: none;
+      transition: background .15s;
     }
     .new-entry-btn:hover { background: #EEF2FF; }
+    .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="wrapper">
+  <div class="page">
     <div class="header">
       <div class="logo">Durga Foundation</div>
       <h1>Guest Entry</h1>
-      <p>Please fill in your details to register your visit</p>
+      <p>Fill in your details to register your visit</p>
     </div>
 
     <div class="card">
@@ -250,17 +253,15 @@ export const showEntryPage = (req: Request, res: Response) => {
       ` : `
       ${error ? `<div class="error-banner">⚠ ${error}</div>` : ""}
       <form method="POST" action="/attendance/entry" id="entry-form">
-        <div class="section-title">Personal Information</div>
-        <div class="row">
-          <div class="field">
-            <label>Full Name <span class="req">*</span></label>
-            <input type="text" name="fullName" placeholder="e.g. Ramesh Kumar" required autocomplete="name" />
-          </div>
-          <div class="field">
-            <label>Phone Number <span class="req">*</span></label>
-            <input type="tel" name="phone" placeholder="e.g. 9876543210" required autocomplete="tel"
-              pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number" />
-          </div>
+        <div class="section-label">Personal Information</div>
+        <div class="field">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" name="fullName" placeholder="e.g. Ramesh Kumar" required autocomplete="name" />
+        </div>
+        <div class="field">
+          <label>Phone Number <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="e.g. 9876543210" required autocomplete="tel"
+            pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number" />
         </div>
         <div class="field">
           <label>Email Address</label>
@@ -268,45 +269,14 @@ export const showEntryPage = (req: Request, res: Response) => {
         </div>
 
         <hr class="divider">
-        <div class="section-title">Address</div>
+        <div class="section-label">Address</div>
         <div class="field">
-          <label>Street / House No.</label>
-          <input type="text" name="street" placeholder="House no., street name" autocomplete="address-line1" />
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>City / Town <span class="req">*</span></label>
-            <input type="text" name="city" placeholder="e.g. Lucknow" required autocomplete="address-level2" />
-          </div>
-          <div class="field">
-            <label>State</label>
-            <select name="state" autocomplete="address-level1">
-              <option value="">— Select State —</option>
-              <option>Andhra Pradesh</option><option>Arunachal Pradesh</option>
-              <option>Assam</option><option>Bihar</option><option>Chhattisgarh</option>
-              <option>Goa</option><option>Gujarat</option><option>Haryana</option>
-              <option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option>
-              <option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option>
-              <option>Manipur</option><option>Meghalaya</option><option>Mizoram</option>
-              <option>Nagaland</option><option>Odisha</option><option>Punjab</option>
-              <option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option>
-              <option>Telangana</option><option>Tripura</option><option selected>Uttar Pradesh</option>
-              <option>Uttarakhand</option><option>West Bengal</option>
-              <option>Andaman and Nicobar Islands</option><option>Chandigarh</option>
-              <option>Dadra and Nagar Haveli and Daman and Diu</option>
-              <option>Delhi</option><option>Jammu and Kashmir</option>
-              <option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option>
-            </select>
-          </div>
-        </div>
-        <div class="field">
-          <label>PIN Code</label>
-          <input type="text" name="pincode" placeholder="e.g. 226001" pattern="[1-9][0-9]{5}"
-            title="Enter a valid 6-digit PIN code" autocomplete="postal-code" maxlength="6" />
+          <label>Full Address</label>
+          <textarea name="address" placeholder="House no., street, city, state, PIN code" rows="3"></textarea>
         </div>
 
         <hr class="divider">
-        <div class="section-title">Visit Details</div>
+        <div class="section-label">Visit Details</div>
         <div class="field">
           <label>Purpose of Visit <span class="req">*</span></label>
           <select name="purpose" required>
@@ -322,7 +292,7 @@ export const showEntryPage = (req: Request, res: Response) => {
         </div>
         <div class="field">
           <label>Additional Remarks</label>
-          <textarea name="remarks" placeholder="Any additional information…"></textarea>
+          <textarea name="remarks" placeholder="Any additional information…" rows="2"></textarea>
         </div>
 
         <button type="submit" class="submit-btn" id="submit-btn">Register Entry</button>
@@ -337,8 +307,7 @@ export const showEntryPage = (req: Request, res: Response) => {
     var btn  = document.getElementById('submit-btn');
     if (form) {
       form.addEventListener('submit', function() {
-        btn.disabled = true;
-        btn.textContent = 'Saving…';
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
       });
     }
   </script>
@@ -348,9 +317,9 @@ export const showEntryPage = (req: Request, res: Response) => {
 
 export const processEntryForm = async (req: Request, res: Response) => {
   try {
-    const { fullName, phone, email, street, city, state, pincode, purpose, remarks } = req.body;
+    const { fullName, phone, email, address, purpose, remarks } = req.body;
 
-    if (!fullName?.trim() || !phone?.trim() || !city?.trim() || !purpose?.trim()) {
+    if (!fullName?.trim() || !phone?.trim() || !purpose?.trim()) {
       return res.redirect(
         "/attendance/entry?error=" + encodeURIComponent("Please fill in all required fields")
       );
@@ -362,9 +331,6 @@ export const processEntryForm = async (req: Request, res: Response) => {
         "/attendance/entry?error=" + encodeURIComponent("Please enter a valid 10-digit phone number")
       );
     }
-
-    const addressParts = [street, city, state, pincode].filter(Boolean);
-    const address = addressParts.join(", ");
 
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const now = new Date();
