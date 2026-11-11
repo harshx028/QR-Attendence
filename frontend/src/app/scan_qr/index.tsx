@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 
 import React, { useRef } from "react";
-import { Text, View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, Pressable, ActivityIndicator, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { COLORS, SPACING, ROUNDNESS } from "@/constants/Theme";
@@ -34,9 +34,15 @@ const ScanQr = () => {
         <Text style={styleSheet.permissionText}>
           Camera access is needed to scan the attendance QR code.
         </Text>
-        <Pressable style={styleSheet.permissionButton} onPress={requestPermission}>
-          <Text style={styleSheet.permissionButtonText}>Grant Camera Access</Text>
-        </Pressable>
+        {permission.canAskAgain ? (
+          <Pressable style={styleSheet.permissionButton} onPress={requestPermission}>
+            <Text style={styleSheet.permissionButtonText}>Grant Camera Access</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styleSheet.permissionButton} onPress={() => Linking.openSettings()}>
+            <Text style={styleSheet.permissionButtonText}>Open Settings</Text>
+          </Pressable>
+        )}
       </SafeAreaView>
     );
   }

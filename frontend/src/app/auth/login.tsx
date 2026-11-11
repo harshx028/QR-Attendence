@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
@@ -41,7 +41,11 @@ const LoginPage = () => {
       >
         <View style={styles.content}>
           <View style={styles.headerContainer}>
-            <Text style={styles.appName}>Attendance</Text>
+            <Image
+              source={require("../../../assets/images/icon.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.tagline}>Simplify your workday</Text>
           </View>
 
@@ -165,11 +169,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SPACING.xxl,
   },
-  appName: {
-    fontSize: 32,
-    fontWeight: "900",
-    color: COLORS.primary,
-    letterSpacing: -0.5,
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: SPACING.sm,
   },
   tagline: {
     fontSize: 14,

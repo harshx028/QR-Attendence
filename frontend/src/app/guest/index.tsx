@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   View, Text, TextInput, Pressable, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -39,7 +39,11 @@ export default function GuestEntry() {
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.headerContainer}>
-            <Text style={styles.appName}>Attendance</Text>
+            <Image
+              source={require("../../../assets/images/icon.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.tagline}>Guest check-in</Text>
           </View>
 
@@ -95,7 +99,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { flexGrow: 1, padding: SPACING.lg, justifyContent: "center" },
   headerContainer: { alignItems: "center", marginBottom: SPACING.xxl },
-  appName: { fontSize: 32, fontWeight: "900", color: COLORS.primary, letterSpacing: -0.5 },
+  logo: { width: 80, height: 80, marginBottom: SPACING.sm },
   tagline: { fontSize: 14, color: COLORS.onSurfaceVariant, marginTop: 2, fontWeight: "500" },
   card: { width: "100%", gap: SPACING.md },
   title: { fontSize: 24, fontWeight: "800", color: COLORS.onSurface },
