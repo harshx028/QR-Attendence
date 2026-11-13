@@ -7,7 +7,8 @@ export type Attendance = {
   markedAt: string;
   checkInAt?: string;
   checkOutAt?: string | null;
-  user?: { id: string; fullName: string; email: string };
+  remarks?: string | null;
+  user?:{ id: string; fullName: string; email: string };
 };
 
 export type TodayStatus = {
@@ -70,9 +71,22 @@ const getTodayStatus = async (): Promise<TodayStatus> => {
   }
 };
 
-const getMyAttendance = async () => {
+export type MyAttendanceResponse = {
+  success: boolean;
+  message?: string;
+  attendances?: Attendance[];
+  /** Server's current IST date, YYYY-MM-DD */
+  today?: string;
+  /** User's account creation date (IST), YYYY-MM-DD */
+  joinedOn?: string | null;
+};
+
+/** @param month optional "YYYY-MM" to fetch a single month */
+const getMyAttendance = async (month?: string): Promise<MyAttendanceResponse> => {
   try {
-    const res = await api.get("/api/v1/attendance/me");
+    const res = await api.get("/api/v1/attendance/me", {
+      params: month ? { month } : undefined,
+    });
     return res.data;
   } catch (error: any) {
     return error?.response?.data || { success: false, message: "Something went wrong" };

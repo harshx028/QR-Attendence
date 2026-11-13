@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import QrScanner from "../components/QrScanner";
+import QrScanner, { ScanLayout } from "../components/QrScanner";
 
 export default function GuestScan() {
   const navigate = useNavigate();
@@ -7,23 +8,23 @@ export default function GuestScan() {
   const guestName: string = state?.guestName ?? "";
   const guestPhone: string = state?.guestPhone ?? "";
 
-  const handleScan = (data: string) => {
-    navigate("/guest/confirm", {
-      state: { token: data, guestName, guestPhone },
-      replace: true,
-    });
-  };
+  const handleScan = useCallback(
+    (data: string) =>
+      navigate("/guest/confirm", { state: { token: data, guestName, guestPhone }, replace: true }),
+    [navigate, guestName, guestPhone]
+  );
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6 px-6">
-      <p className="text-white font-bold text-base">{guestName}</p>
+    <ScanLayout
+      title="Scan office QR"
+      subtitle={
+        <>
+          Checking in as <span className="font-semibold text-white">{guestName}</span>
+        </>
+      }
+      onBack={() => navigate("/guest")}
+    >
       <QrScanner onScan={handleScan} />
-      <button
-        onClick={() => navigate("/guest")}
-        className="text-sm text-slate-400 font-semibold hover:text-white transition"
-      >
-        ← Back
-      </button>
-    </div>
+    </ScanLayout>
   );
 }

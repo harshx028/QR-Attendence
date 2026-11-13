@@ -11,6 +11,7 @@ import Guest from "./pages/Guest";
 import GuestScan from "./pages/GuestScan";
 import GuestConfirm from "./pages/GuestConfirm";
 import AdminAttendance from "./pages/AdminAttendance";
+import MyAttendance from "./pages/MyAttendance";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <MarkAttendance />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/attendence/history",
+    element: (
+      <ProtectedRoute>
+        <MyAttendance />
       </ProtectedRoute>
     ),
   },

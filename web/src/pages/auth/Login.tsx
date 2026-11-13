@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { AlertCircle, Mail, UserRound } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
+import AuthLayout from "../../components/AuthLayout";
+import PasswordInput from "../../components/PasswordInput";
+import { Button } from "../../components/ui";
 
 type LoginCreds = { email: string; password: string };
 
@@ -12,21 +16,15 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (isAuthenticated) {
-    navigate("/", { replace: true });
-    return null;
-  }
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
   const onSubmit = async (data: LoginCreds) => {
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
       const res = await login(data);
-      if (res.success) {
-        navigate("/", { replace: true });
-      } else {
-        setErrorMsg(res.message);
-      }
+      if (res.success) navigate("/", { replace: true });
+      else setErrorMsg(res.message);
     } catch {
       setErrorMsg("An unexpected error occurred");
     } finally {
@@ -35,76 +33,64 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo.png" alt="Logo" className="w-20 h-20 mb-2" />
-          <p className="text-sm text-on-surface-variant font-medium">Simplify your workday</p>
-        </div>
-
-        <h1 className="text-2xl font-extrabold text-on-surface mb-1">Sign In</h1>
-        <p className="text-sm text-on-surface-variant mb-6">Welcome back! Please enter your details.</p>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Email address</label>
+    <AuthLayout title="Welcome back 👋" subtitle="Sign in to mark and track your attendance.">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="label">Email address</label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               autoComplete="email"
               placeholder="yourname@company.com"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input input-icon"
               {...register("email", {
                 required: "Email is required",
                 pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email format" },
               })}
             />
-            {errors.email && <p className="text-error text-xs mt-1">{errors.email.message}</p>}
           </div>
+          {errors.email && <p className="mt-1.5 text-xs font-medium text-error">{errors.email.message}</p>}
+        </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              {...register("password", { required: "Password is required" })}
-            />
-            {errors.password && <p className="text-error text-xs mt-1">{errors.password.message}</p>}
+        <div>
+          <label className="label">Password</label>
+          <PasswordInput
+            autoComplete="current-password"
+            placeholder="••••••••"
+            {...register("password", { required: "Password is required" })}
+          />
+          {errors.password && <p className="mt-1.5 text-xs font-medium text-error">{errors.password.message}</p>}
+        </div>
+
+        {errorMsg && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" /> {errorMsg}
           </div>
+        )}
 
-          {errorMsg && (
-            <p className="text-error text-sm text-center font-semibold">{errorMsg}</p>
-          )}
+        <Button type="submit" size="lg" loading={isSubmitting} className="w-full">
+          Sign in
+        </Button>
+      </form>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-primary text-white font-bold text-base py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-70 flex items-center justify-center"
-          >
-            {isSubmitting ? (
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              "Sign In"
-            )}
-          </button>
-        </form>
-
-        <Link
-          to="/guest"
-          className="mt-3 w-full border border-outline text-on-surface-variant font-semibold text-sm py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center"
-        >
-          Continue without login
-        </Link>
-
-        <p className="text-center text-sm text-on-surface-variant mt-8">
-          New to the platform?{" "}
-          <Link to="/auth/signup" className="text-primary font-bold">
-            Create account
-          </Link>
-        </p>
+      <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <span className="h-px flex-1 bg-slate-200" /> or <span className="h-px flex-1 bg-slate-200" />
       </div>
-    </div>
+
+      <Link
+        to="/guest"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+      >
+        <UserRound className="h-5 w-5" /> Continue as guest
+      </Link>
+
+      <p className="mt-8 text-center text-sm text-on-surface-variant">
+        New here?{" "}
+        <Link to="/auth/signup" className="font-bold text-primary hover:underline">
+          Create an account
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

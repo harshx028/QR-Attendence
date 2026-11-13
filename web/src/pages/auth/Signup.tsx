@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, Mail, UserRound } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
+import AuthLayout from "../../components/AuthLayout";
+import PasswordInput from "../../components/PasswordInput";
+import { Button } from "../../components/ui";
 
 type SignupCreds = { fullName: string; email: string; password: string };
 
@@ -17,11 +21,8 @@ export default function Signup() {
     setIsSubmitting(true);
     try {
       const res = await signup(data);
-      if (res.success) {
-        navigate("/", { replace: true });
-      } else {
-        setErrorMsg(res.message);
-      }
+      if (res.success) navigate("/", { replace: true });
+      else setErrorMsg(res.message);
     } catch {
       setErrorMsg("An unexpected error occurred");
     } finally {
@@ -30,83 +31,71 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo.png" alt="Logo" className="w-20 h-20 mb-2" />
-          <p className="text-sm text-on-surface-variant font-medium">Join the modern workforce</p>
-        </div>
-
-        <h1 className="text-2xl font-extrabold text-on-surface mb-1">Create account</h1>
-        <p className="text-sm text-on-surface-variant mb-6">Get started with your company account.</p>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Full name</label>
+    <AuthLayout title="Create your account" subtitle="Get started with your company account.">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="label">Full name</label>
+          <div className="relative">
+            <UserRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               autoComplete="name"
               placeholder="e.g. Harsh Mishra"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input input-icon"
               {...register("fullName", { required: "Full name is required" })}
             />
-            {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName.message}</p>}
           </div>
+          {errors.fullName && <p className="mt-1.5 text-xs font-medium text-error">{errors.fullName.message}</p>}
+        </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Email address</label>
+        <div>
+          <label className="label">Email address</label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               autoComplete="email"
               placeholder="yourname@company.com"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input input-icon"
               {...register("email", {
                 required: "Email is required",
                 pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email format" },
               })}
             />
-            {errors.email && <p className="text-error text-xs mt-1">{errors.email.message}</p>}
           </div>
+          {errors.email && <p className="mt-1.5 text-xs font-medium text-error">{errors.email.message}</p>}
+        </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Password</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              {...register("password", {
-                required: "Password is required",
-                minLength: { value: 6, message: "Password must be at least 6 characters" },
-              })}
-            />
-            {errors.password && <p className="text-error text-xs mt-1">{errors.password.message}</p>}
+        <div>
+          <label className="label">Password</label>
+          <PasswordInput
+            autoComplete="new-password"
+            placeholder="At least 6 characters"
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "Password must be at least 6 characters" },
+            })}
+          />
+          {errors.password && <p className="mt-1.5 text-xs font-medium text-error">{errors.password.message}</p>}
+        </div>
+
+        {errorMsg && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" /> {errorMsg}
           </div>
+        )}
 
-          {errorMsg && (
-            <p className="text-error text-sm text-center font-semibold">{errorMsg}</p>
-          )}
+        <Button type="submit" size="lg" loading={isSubmitting} className="w-full">
+          Create account
+        </Button>
+      </form>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-primary text-white font-bold text-base py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-70 flex items-center justify-center"
-          >
-            {isSubmitting ? (
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              "Create account"
-            )}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-on-surface-variant mt-8">
-          Already have an account?{" "}
-          <Link to="/auth/login" className="text-primary font-bold">
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="mt-8 text-center text-sm text-on-surface-variant">
+        Already have an account?{" "}
+        <Link to="/auth/login" className="font-bold text-primary hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

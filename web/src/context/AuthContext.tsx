@@ -6,7 +6,13 @@ import {
   verifyAuth as apiVerifyAuth,
 } from "../api/auth.api";
 
-type User = { id: string; fullName: string; email: string; role: "USER" | "ADMIN" } | null;
+type User = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  createdAt?: string;
+} | null;
 
 type AuthContextValue = {
   isLoading: boolean;

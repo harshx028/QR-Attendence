@@ -130,14 +130,30 @@ export const getTodayStatus = async (req: AuthRequest, res: Response) => {
 export const getMyAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
+    const month = typeof req.query.month === "string" ? req.query.month : undefined;
 
-    const attendances = await prisma.attendance.findMany({
-      where: { userId },
-      orderBy: { markedAt: "desc" },
-      take: 90,
+    if (month && !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, message: "month must be in YYYY-MM format" });
+    }
+
+    const [attendances, user] = await Promise.all([
+      prisma.attendance.findMany({
+        // `date` is stored as YYYY-MM-DD (IST), so a prefix match selects the month.
+        where: month ? { userId, date: { startsWith: `${month}-` } } : { userId },
+        orderBy: { markedAt: "desc" },
+        take: month ? 31 : 90,
+      }),
+      prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      attendances,
+      today: getISTDate(),
+      joinedOn: user
+        ? user.createdAt.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })
+        : null,
     });
-
-    return res.status(200).json({ success: true, attendances });
   } catch (error: any) {
     console.error("Get my attendance error:", error);
     res.status(500).json({ success: false, message: "Error fetching attendance history", error: error.message });

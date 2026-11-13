@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CheckCheck, LogIn, LogOut, Phone, ScanLine, UserRound, XCircle } from "lucide-react";
 import { markGuestAttendance } from "../api/attendance.api";
+import { Avatar, Button, CenteredCard, StatusIcon } from "../components/ui";
 
 type Status = "confirm" | "submitting" | "success" | "done" | "error";
 
@@ -49,104 +51,72 @@ export default function GuestConfirm() {
     }
   };
 
-  const scanAgain = () =>
-    navigate("/guest/scan", { state: { guestName, guestPhone }, replace: true });
+  const scanAgain = () => navigate("/guest/scan", { state: { guestName, guestPhone }, replace: true });
+  const finish = () => navigate("/auth/login", { replace: true });
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white border border-outline rounded-3xl p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-4">
-
-          {(status === "confirm" || status === "submitting") && (
-            <>
-              <span className="bg-green-100 text-green-700 text-xs font-bold px-4 py-1 rounded-full tracking-widest">
-                CHECK-IN / CHECK-OUT
-              </span>
-              <h1 className="text-xl font-black text-on-surface">Confirm Attendance</h1>
-              <p className="text-sm text-on-surface-variant text-center">
-                Scanning as <strong className="text-on-surface">{guestName}</strong>
-                <br />Phone: {guestPhone}
-              </p>
-              <button
-                onClick={handleMark}
-                disabled={status === "submitting"}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition disabled:opacity-70 flex items-center justify-center"
-              >
-                {status === "submitting" ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-              <button
-                onClick={scanAgain}
-                disabled={status === "submitting"}
-                className="text-sm text-primary font-bold hover:underline"
-              >
-                Scan a different code
-              </button>
-            </>
-          )}
-
-          {status === "success" && (
-            <>
-              <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                  eventType === "CHECK-IN" ? "bg-green-100" : "bg-red-100"
-                }`}
-              >
-                <span
-                  className={`text-xl font-black ${
-                    eventType === "CHECK-IN" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {eventType === "CHECK-IN" ? "↓" : "↑"}
-                </span>
+    <CenteredCard>
+      <div className="flex flex-col items-center gap-4 text-center">
+        {(status === "confirm" || status === "submitting") && (
+          <>
+            <StatusIcon icon={UserRound} tone="indigo" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Guest check-in / out</p>
+              <h1 className="mt-1 text-2xl font-extrabold text-on-surface">Confirm your visit</h1>
+            </div>
+            <div className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left">
+              <Avatar name={guestName} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-on-surface">{guestName}</p>
+                <p className="flex items-center gap-1 text-xs text-on-surface-variant">
+                  <Phone className="h-3 w-3" /> {guestPhone}
+                </p>
               </div>
-              <h1 className="text-xl font-black text-on-surface">
-                {eventType === "CHECK-IN" ? "Checked In!" : "Checked Out!"}
-              </h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={() => navigate("/auth/login", { replace: true })}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Done
-              </button>
-            </>
-          )}
+            </div>
+            <Button size="lg" className="mt-1 w-full" loading={status === "submitting"} onClick={handleMark}>
+              Confirm
+            </Button>
+            <Button variant="ghost" icon={ScanLine} disabled={status === "submitting"} onClick={scanAgain}>
+              Scan a different code
+            </Button>
+          </>
+        )}
 
-          {status === "done" && (
-            <>
-              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="text-xl font-black text-green-600">✓</span>
-              </div>
-              <h1 className="text-xl font-black text-on-surface">All Done Today</h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={() => navigate("/auth/login", { replace: true })}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Done
-              </button>
-            </>
-          )}
+        {status === "success" && (
+          <>
+            <StatusIcon icon={eventType === "CHECK-IN" ? LogIn : LogOut} tone={eventType === "CHECK-IN" ? "green" : "red"} />
+            <h1 className="text-2xl font-extrabold text-on-surface">
+              {eventType === "CHECK-IN" ? "Welcome in!" : "Thanks for visiting!"}
+            </h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" className="mt-2 w-full" onClick={finish}>
+              Done
+            </Button>
+          </>
+        )}
 
-          {status === "error" && (
-            <>
-              <h1 className="text-xl font-black text-error text-center">Something went wrong</h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={scanAgain}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Try Again
-              </button>
-            </>
-          )}
+        {status === "done" && (
+          <>
+            <StatusIcon icon={CheckCheck} tone="indigo" />
+            <h1 className="text-2xl font-extrabold text-on-surface">All done today</h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" className="mt-2 w-full" onClick={finish}>
+              Done
+            </Button>
+          </>
+        )}
 
-        </div>
+        {status === "error" && (
+          <>
+            <StatusIcon icon={XCircle} tone="red" />
+            <h1 className="text-2xl font-extrabold text-on-surface">Something went wrong</h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" icon={ScanLine} className="mt-2 w-full" onClick={scanAgain}>
+              Try again
+            </Button>
+          </>
+        )}
       </div>
-    </div>
+    </CenteredCard>
   );
 }

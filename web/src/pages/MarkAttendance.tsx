@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CheckCheck, LogIn, LogOut, MapPin, MessageSquareText, ScanLine, XCircle } from "lucide-react";
 import { markAttendance, getTodayStatus } from "../api/attendance.api";
+import { Button, CenteredCard, Spinner, StatusIcon } from "../components/ui";
 
 type Status = "checking" | "confirm_checkin" | "confirm_checkout" | "success" | "done" | "error";
 
@@ -13,6 +15,10 @@ function getLocation(): Promise<{ lat: number | null; lng: number | null }> {
       { timeout: 5000 }
     );
   });
+}
+
+function nowLabel() {
+  return new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 export default function MarkAttendance() {
@@ -68,131 +74,97 @@ export default function MarkAttendance() {
   };
 
   const isCheckout = status === "confirm_checkout";
+  const goHome = () => navigate("/", { replace: true });
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white border border-outline rounded-3xl p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-4">
+    <CenteredCard>
+      <div className="flex flex-col items-center gap-4 text-center">
+        {status === "checking" && (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <Spinner className="h-10 w-10" />
+            <p className="text-sm text-on-surface-variant">Checking today's status…</p>
+          </div>
+        )}
 
-          {status === "checking" && (
-            <span className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          )}
-
-          {(status === "confirm_checkin" || status === "confirm_checkout") && (
-            <>
-              <span
-                className={`text-xs font-bold px-4 py-1 rounded-full tracking-widest ${
-                  isCheckout
-                    ? "bg-red-100 text-red-700"
-                    : "bg-green-100 text-green-700"
-                }`}
-              >
-                {isCheckout ? "CHECK-OUT" : "CHECK-IN"}
-              </span>
-              <h1 className="text-xl font-black text-on-surface text-center">
-                {isCheckout ? "Confirm Check-Out" : "Confirm Check-In"}
-              </h1>
-              <p className="text-sm text-on-surface-variant text-center">
-                {isCheckout
-                  ? "Tap below to record your check-out time and location."
-                  : "Tap below to record your check-in time and location."}
+        {(status === "confirm_checkin" || status === "confirm_checkout") && (
+          <>
+            <StatusIcon icon={isCheckout ? LogOut : LogIn} tone={isCheckout ? "red" : "green"} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                {isCheckout ? "Check-out" : "Check-in"} at {nowLabel()}
               </p>
-              {!isCheckout && remarks && (
-                <div className="w-full bg-yellow-50 rounded-xl p-3">
-                  <p className="text-xs font-bold text-yellow-800 mb-1">Remark</p>
-                  <p className="text-sm text-yellow-700">{remarks}</p>
-                </div>
-              )}
-              <button
-                onClick={handleMark}
-                disabled={isSubmitting}
-                className={`w-full text-white font-black py-3 rounded-full shadow-md transition disabled:opacity-70 flex items-center justify-center ${
-                  isCheckout ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-indigo-700"
-                }`}
-              >
-                {isSubmitting ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : isCheckout ? (
-                  "Check Out"
-                ) : (
-                  "Check In"
-                )}
-              </button>
-              <button
-                onClick={() => navigate("/scan_qr", { replace: true })}
-                disabled={isSubmitting}
-                className="text-sm text-primary font-bold hover:underline"
-              >
-                Scan a different code
-              </button>
-            </>
-          )}
-
-          {status === "success" && (
-            <>
-              <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                  eventType === "CHECK-IN" ? "bg-green-100" : "bg-red-100"
-                }`}
-              >
-                <span
-                  className={`text-xl font-black ${
-                    eventType === "CHECK-IN" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {eventType === "CHECK-IN" ? "↓" : "↑"}
-                </span>
-              </div>
-              <h1 className="text-xl font-black text-on-surface">
-                {eventType === "CHECK-IN" ? "Checked In!" : "Checked Out!"}
+              <h1 className="mt-1 text-2xl font-extrabold text-on-surface">
+                {isCheckout ? "Heading out?" : "Ready to start?"}
               </h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={() => navigate("/", { replace: true })}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Go to Dashboard
-              </button>
-            </>
-          )}
-
-          {status === "done" && (
-            <>
-              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="text-xl font-black text-green-600">✓</span>
+            </div>
+            <p className="flex items-center gap-1.5 text-sm text-on-surface-variant">
+              <MapPin className="h-4 w-4" /> Your time and location will be recorded.
+            </p>
+            {!isCheckout && remarks && (
+              <div className="flex w-full items-start gap-2.5 rounded-2xl bg-amber-50 p-3.5 text-left">
+                <MessageSquareText className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                <p className="text-sm text-amber-800">{remarks}</p>
               </div>
-              <h1 className="text-xl font-black text-on-surface">All Done Today</h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={() => navigate("/", { replace: true })}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Go to Dashboard
-              </button>
-            </>
-          )}
+            )}
+            <Button
+              size="lg"
+              variant={isCheckout ? "danger" : "success"}
+              icon={isCheckout ? LogOut : LogIn}
+              loading={isSubmitting}
+              onClick={handleMark}
+              className="mt-2 w-full"
+            >
+              {isCheckout ? "Check out" : "Check in"}
+            </Button>
+            <Button
+              variant="ghost"
+              icon={ScanLine}
+              disabled={isSubmitting}
+              onClick={() => navigate("/scan_qr", { replace: true })}
+            >
+              Scan a different code
+            </Button>
+          </>
+        )}
 
-          {status === "error" && (
-            <>
-              <h1 className="text-xl font-black text-error text-center">Something went wrong</h1>
-              <p className="text-sm text-on-surface-variant text-center">{message}</p>
-              <button
-                onClick={() => navigate("/scan_qr", { replace: true })}
-                className="w-full bg-primary text-white font-black py-3 rounded-full hover:bg-indigo-700 transition"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={() => navigate("/", { replace: true })}
-                className="text-sm text-primary font-bold hover:underline"
-              >
-                Go to Dashboard
-              </button>
-            </>
-          )}
+        {status === "success" && (
+          <>
+            <StatusIcon icon={eventType === "CHECK-IN" ? LogIn : LogOut} tone={eventType === "CHECK-IN" ? "green" : "red"} />
+            <h1 className="text-2xl font-extrabold text-on-surface">
+              {eventType === "CHECK-IN" ? "You're checked in!" : "You're checked out!"}
+            </h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" className="mt-2 w-full" onClick={goHome}>
+              Go to dashboard
+            </Button>
+          </>
+        )}
 
-        </div>
+        {status === "done" && (
+          <>
+            <StatusIcon icon={CheckCheck} tone="indigo" />
+            <h1 className="text-2xl font-extrabold text-on-surface">All done today</h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" className="mt-2 w-full" onClick={goHome}>
+              Go to dashboard
+            </Button>
+          </>
+        )}
+
+        {status === "error" && (
+          <>
+            <StatusIcon icon={XCircle} tone="red" />
+            <h1 className="text-2xl font-extrabold text-on-surface">Something went wrong</h1>
+            <p className="text-sm text-on-surface-variant">{message}</p>
+            <Button size="lg" icon={ScanLine} className="mt-2 w-full" onClick={() => navigate("/scan_qr", { replace: true })}>
+              Try again
+            </Button>
+            <Button variant="ghost" onClick={goHome}>
+              Go to dashboard
+            </Button>
+          </>
+        )}
       </div>
-    </div>
+    </CenteredCard>
   );
 }

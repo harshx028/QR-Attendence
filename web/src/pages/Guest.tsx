@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { ArrowLeft, Phone, ScanLine, UserRound } from "lucide-react";
+import AuthLayout from "../components/AuthLayout";
+import { Button } from "../components/ui";
 
 const isNative = Capacitor.isNativePlatform();
 const BACKEND_GUEST_FORM = "https://attendence.durga-foundation.org/attendance/entry";
@@ -20,71 +23,62 @@ export default function Guest() {
     return Object.keys(e).length === 0;
   };
 
-  const handleProceed = () => {
+  const handleProceed = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!validate()) return;
     if (isNative) {
-      navigate("/guest/scan", {
-        state: { guestName: fullName.trim(), guestPhone: phone.trim() },
-      });
+      navigate("/guest/scan", { state: { guestName: fullName.trim(), guestPhone: phone.trim() } });
     } else {
       window.location.href = BACKEND_GUEST_FORM;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo.png" alt="Logo" className="w-20 h-20 mb-2" />
-          <p className="text-sm text-on-surface-variant font-medium">Guest check-in</p>
-        </div>
-
-        <h1 className="text-xl font-black text-on-surface mb-1">Enter your details</h1>
-        <p className="text-sm text-on-surface-variant mb-6">
-          Please provide your name and phone number to proceed.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Full Name</label>
+    <AuthLayout title="Guest check-in" subtitle="Tell us who you are, then scan the office QR code.">
+      <form onSubmit={handleProceed} className="space-y-4">
+        <div>
+          <label className="label">Full name</label>
+          <div className="relative">
+            <UserRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Your full name"
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              className="input input-icon"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
-            {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName}</p>}
           </div>
+          {errors.fullName && <p className="mt-1.5 text-xs font-medium text-error">{errors.fullName}</p>}
+        </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Phone Number</label>
+        <div>
+          <label className="label">Phone number</label>
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="tel"
+              inputMode="numeric"
               placeholder="10-digit mobile number"
               maxLength={10}
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              className="input input-icon"
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             />
-            {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
           </div>
-
-          <button
-            onClick={handleProceed}
-            className="w-full bg-primary text-white font-bold py-3 rounded-full hover:bg-indigo-700 transition"
-          >
-            {isNative ? "Proceed to Scan QR" : "Go to Check-in Form"}
-          </button>
-
-          <Link
-            to="/auth/login"
-            className="block text-center text-sm text-on-surface-variant font-semibold hover:text-on-surface"
-          >
-            Back to Login
-          </Link>
+          {errors.phone && <p className="mt-1.5 text-xs font-medium text-error">{errors.phone}</p>}
         </div>
-      </div>
-    </div>
+
+        <Button type="submit" size="lg" icon={isNative ? ScanLine : undefined} className="w-full">
+          {isNative ? "Proceed to scan QR" : "Go to check-in form"}
+        </Button>
+      </form>
+
+      <Link
+        to="/auth/login"
+        className="mt-6 flex items-center justify-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to sign in
+      </Link>
+    </AuthLayout>
   );
 }

@@ -1,3 +1,5 @@
+@import "@fontsource-variable/plus-jakarta-sans";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +9,42 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-white text-on-surface;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    @apply bg-canvas text-on-surface antialiased;
   }
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-outline bg-white px-4 py-3 text-base text-on-surface
+      placeholder:text-slate-400 shadow-sm transition
+      focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15;
+  }
+  .input-icon {
+    @apply pl-11;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-slate-700;
+  }
+  .card {
+    @apply rounded-3xl border border-slate-200/70 bg-white shadow-card;
+  }
+  .hero-gradient {
+    background: radial-gradient(120% 140% at 0% 0%, #6366F1 0%, #4F46E5 45%, #7C3AED 100%);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* html5-qrcode injects its own video element; make it fill the frame. */
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+#qr-reader {
+  border: none !important;
 }
