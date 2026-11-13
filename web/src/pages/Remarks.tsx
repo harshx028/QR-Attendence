@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, MessageSquareText, ScanLine } from "lucide-react";
+import { Button, CenteredCard, StatusIcon, cx } from "../components/ui";
+
+const QUICK = ["Traffic delay", "Doctor's appointment", "Field visit", "Working from site"];
 
 export default function Remarks() {
   const navigate = useNavigate();
@@ -10,50 +14,58 @@ export default function Remarks() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white border border-outline rounded-3xl p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-4">
-          <span className="bg-green-100 text-green-700 text-xs font-bold px-4 py-1 rounded-full tracking-widest">
-            CHECK-IN
-          </span>
-          <h1 className="text-xl font-black text-on-surface text-center">Add a Remark</h1>
-          <p className="text-sm text-on-surface-variant text-center">
-            Running late or have something to note? Add an optional remark before scanning.
+    <CenteredCard>
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Back"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <StatusIcon icon={MessageSquareText} tone="amber" />
+        <div>
+          <h1 className="text-2xl font-extrabold text-on-surface">Add a remark?</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            Running late or have something to note? It's optional.
           </p>
-
-          <div className="w-full">
-            <label className="block text-sm font-semibold text-on-surface mb-1">
-              Remark (optional)
-            </label>
-            <textarea
-              className="w-full border border-outline rounded-lg px-4 py-3 text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              placeholder="e.g. Traffic delay, Doctor's appointment…"
-              rows={4}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
-          </div>
-
-          <button
-            onClick={() => proceed(false)}
-            className="w-full bg-primary text-white font-bold py-3 rounded-full hover:bg-indigo-700 transition shadow-md"
-          >
-            Proceed to Scan
-          </button>
-          <button
-            onClick={() => proceed(true)}
-            className="text-sm text-on-surface-variant font-semibold hover:text-on-surface transition"
-          >
-            Skip — no remark
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-sm text-on-surface-variant font-medium hover:text-on-surface transition"
-          >
-            ← Back
-          </button>
         </div>
+
+        <div className="flex flex-wrap justify-center gap-2">
+          {QUICK.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => setRemarks(q)}
+              className={cx(
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                remarks === q
+                  ? "border-primary bg-primary-50 text-primary-700"
+                  : "border-slate-200 text-slate-600 hover:border-slate-300"
+              )}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          className="input resize-none text-sm"
+          placeholder="Write a remark…"
+          rows={3}
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+        />
+
+        <Button size="lg" icon={ScanLine} className="w-full" onClick={() => proceed(false)}>
+          {remarks.trim() ? "Save & scan QR" : "Scan QR"}
+        </Button>
+        {remarks.trim() && (
+          <Button variant="ghost" onClick={() => proceed(true)}>
+            Skip remark
+          </Button>
+        )}
       </div>
-    </div>
+    </CenteredCard>
   );
 }

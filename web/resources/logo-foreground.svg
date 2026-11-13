@@ -1,0 +1,14 @@
+<!-- Android adaptive-icon foreground: white mark only, sized to the 66/108 safe zone. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+ <g transform="translate(256 256) scale(0.82) translate(-256 -256)">
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="34">
+      <path d="M118 196 V154 a36 36 0 0 1 36 -36 H196"/>
+      <path d="M316 118 H358 a36 36 0 0 1 36 36 V196"/>
+      <path d="M394 316 V358 a36 36 0 0 1 -36 36 H316"/>
+      <path d="M196 394 H154 a36 36 0 0 1 -36 -36 V316"/>
+    </g>
+    <path d="M182 262 L234 312 L332 208" stroke-width="42"/>
+  </g>
+ </g>
+</svg>
