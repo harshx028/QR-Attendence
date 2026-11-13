@@ -38,7 +38,7 @@ export default function AppShell({
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200/70 bg-white px-4 py-6 lg:flex">
         <div className="flex items-center gap-3 px-2">
-          <img src="/logo.png" alt="" className="h-10 w-10 rounded-xl" />
+          <img src="/logo.svg" alt="" className="h-10 w-10 rounded-xl shadow-md shadow-primary/30" />
           <div>
             <p className="text-sm font-extrabold leading-tight text-on-surface">Mark Attendance</p>
             <p className="text-xs text-on-surface-variant">Durga Foundation</p>
@@ -86,7 +86,7 @@ export default function AppShell({
       <header className="sticky top-0 z-20 border-b border-slate-200/60 bg-canvas/85 backdrop-blur pt-safe lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg" />
+            <img src="/logo.svg" alt="" className="h-8 w-8 rounded-lg shadow-sm shadow-primary/30" />
             <p className="text-base font-extrabold text-on-surface">{title || "Mark Attendance"}</p>
           </div>
           <button
