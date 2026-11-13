@@ -1,0 +1,11 @@
+# Added by project-init
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+node_modules/
+dist/
+build/
+.next/
+coverage/
