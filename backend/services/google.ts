@@ -41,7 +41,7 @@ export interface SaveGuestToSheetData {
 
 type Sheets = sheets_v4.Sheets;
 
-const getAuthAndSheets = () => {
+export const getAuthAndSheets = () => {
   const keyFile = path.resolve(
     path.dirname(new URL(import.meta.url).pathname),
     "../credentials/service-account.json"
@@ -90,24 +90,24 @@ const istTime = (d: Date) =>
     hour12: true,
   });
 
-const mapsLink = (lat?: number | null, lng?: number | null): string => {
+export const mapsLink = (lat?: number | null, lng?: number | null): string => {
   if (lat == null || lng == null) return "N/A";
   return `=HYPERLINK("https://maps.google.com/?q=${lat},${lng}","📍 View Location")`;
 };
 
-const durationText = (from?: Date | null, to?: Date | null): string => {
+export const durationText = (from?: Date | null, to?: Date | null): string => {
   if (!from || !to) return "";
   const mins = Math.max(0, Math.round((to.getTime() - from.getTime()) / 60000));
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
 };
 
 /** A1 range for a tab, quoted so names with spaces/dashes are safe. */
-const rng = (tab: string, a1: string) => `'${tab.replace(/'/g, "''")}'!${a1}`;
+export const rng = (tab: string, a1: string) => `'${tab.replace(/'/g, "''")}'!${a1}`;
 
-const colLetter = (n: number) => String.fromCharCode(64 + n); // 1 -> A (fine up to Z)
+export const colLetter = (n: number) => String.fromCharCode(64 + n); // 1 -> A (fine up to Z)
 
 /** Normalise a Date cell read back from the sheet (text or date serial) to YYYY-MM-DD. */
-const cellToDate = (v: unknown): string => {
+export const cellToDate = (v: unknown): string => {
   if (typeof v === "number") {
     const ms = Math.round((v - 25569) * 86400 * 1000); // Sheets epoch 1899-12-30
     return new Date(ms).toISOString().slice(0, 10);
