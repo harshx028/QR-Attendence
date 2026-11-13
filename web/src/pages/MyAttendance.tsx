@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, LogIn, LogOut, Clock, MessageSquareText, CalendarX2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, LogIn, LogOut, Clock, MessageSquareText } from "lucide-react";
 import AppShell from "../components/AppShell";
 import AttendanceCalendar, { Legend } from "../components/AttendanceCalendar";
 import ProgressRing from "../components/ProgressRing";
@@ -11,7 +11,6 @@ import {
   checkInOf,
   duration,
   fmtDateLong,
-  fmtDateShort,
   fmtTime,
   monthKey,
   monthLabel,
@@ -19,12 +18,9 @@ import {
   todayIST,
 } from "../lib/attendance";
 
-type Filter = "all" | "present" | "absent";
-
 export default function MyAttendance() {
   const [month, setMonth] = useState(() => monthKey(todayIST()));
   const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
   const { days, summary, today, joinedOn, isLoading, error, reload } = useMonthAttendance(month);
 
   const currentMonth = monthKey(today);
@@ -38,15 +34,6 @@ export default function MyAttendance() {
 
   const selectedDay = days.find((d) => d.date === selected) ?? null;
 
-  const listDays = useMemo(() => {
-    const relevant = days.filter((d) =>
-      ["present", "incomplete", "in-progress", "absent"].includes(d.status)
-    );
-    const filtered = relevant.filter((d) =>
-      filter === "all" ? true : filter === "absent" ? d.status === "absent" : d.status !== "absent"
-    );
-    return filtered.reverse();
-  }, [days, filter]);
 
   const monthNav = (
     <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
@@ -129,41 +116,6 @@ export default function MyAttendance() {
         </div>
       )}
 
-      {/* Day list */}
-      {!error && (
-        <section className="mt-6">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-extrabold text-on-surface">Day by day</h2>
-            <div className="flex rounded-xl bg-slate-200/60 p-1">
-              {(["all", "present", "absent"] as Filter[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={cx(
-                    "rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition",
-                    filter === f ? "bg-white text-on-surface shadow-sm" : "text-slate-500"
-                  )}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {isLoading ? null : listDays.length === 0 ? (
-            <div className="card flex flex-col items-center gap-2 p-10 text-center">
-              <CalendarX2 className="h-8 w-8 text-slate-300" />
-              <p className="text-sm text-on-surface-variant">Nothing to show for this month.</p>
-            </div>
-          ) : (
-            <div className="card divide-y divide-slate-100 overflow-hidden">
-              {listDays.map((d) => (
-                <DayRow key={d.date} day={d} onClick={() => setSelected(d.date)} />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </AppShell>
   );
 }
@@ -174,38 +126,6 @@ function MiniStat({ label, value, className }: { label: string; value: number; c
       <p className={cx("text-2xl font-extrabold leading-none", className)}>{value}</p>
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
     </div>
-  );
-}
-
-function DayRow({ day, onClick }: { day: CalendarDay; onClick: () => void }) {
-  const meta = STATUS_META[day.status];
-  const short = fmtDateShort(day.date);
-  const r = day.record;
-  return (
-    <button onClick={onClick} className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition hover:bg-slate-50 sm:px-5">
-      <div
-        className={cx(
-          "flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-2xl",
-          day.status === "absent" ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-700"
-        )}
-      >
-        <span className="text-base font-extrabold leading-none">{short.day}</span>
-        <span className="mt-0.5 text-[10px] font-bold uppercase">{short.weekday}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        {r ? (
-          <p className="text-sm font-semibold text-on-surface">
-            {fmtTime(checkInOf(r))} <span className="text-slate-300">→</span> {fmtTime(r.checkOutAt) ?? "—"}
-          </p>
-        ) : (
-          <p className="text-sm font-semibold text-slate-500">No attendance recorded</p>
-        )}
-        <p className="truncate text-xs text-on-surface-variant">
-          {r?.checkOutAt ? `Worked ${duration(checkInOf(r), r.checkOutAt)}` : r?.remarks || `${short.month} ${short.day}`}
-        </p>
-      </div>
-      <Badge tone={meta.tone}>{meta.label}</Badge>
-    </button>
   );
 }
 
