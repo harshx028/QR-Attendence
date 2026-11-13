@@ -246,6 +246,44 @@ export const markGuestAttendance = async (req: Request, res: Response) => {
   }
 };
 
+export const getUserAttendance = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const month = typeof req.query.month === "string" ? req.query.month : undefined;
+
+    if (month && !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, message: "month must be in YYYY-MM format" });
+    }
+
+    const [attendances, user] = await Promise.all([
+      prisma.attendance.findMany({
+        where: month ? { userId, date: { startsWith: `${month}-` } } : { userId },
+        orderBy: { markedAt: "desc" },
+        take: month ? 31 : 90,
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, email: true, createdAt: true },
+      }),
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      attendances,
+      today: getISTDate(),
+      joinedOn: user.createdAt.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }),
+      user: { fullName: user.fullName, email: user.email },
+    });
+  } catch (error: any) {
+    console.error("Get user attendance error:", error);
+    res.status(500).json({ success: false, message: "Error fetching attendance records", error: error.message });
+  }
+};
+
 export const getAllAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const { date } = req.query;

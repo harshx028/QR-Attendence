@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.middleware";
-import { getMe } from "../controllers/user";
+import { authenticate, isAdmin } from "../middleware/auth.middleware";
+import { getMe, getUsers } from "../controllers/user";
 
+const router = Router();
 
-const router = Router()
+router.get("/me", authenticate, getMe);
+router.get("/", authenticate, isAdmin, getUsers);
 
-router.get('/me', authenticate, getMe);
-
-export default router
+export default router;

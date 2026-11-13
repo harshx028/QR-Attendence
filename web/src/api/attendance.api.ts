@@ -7,6 +7,7 @@ export type Attendance = {
   markedAt: string;
   checkInAt?: string;
   checkOutAt?: string | null;
+  remarks?: string | null;
   user?: { id: string; fullName: string; email: string };
 };
 
@@ -70,9 +71,28 @@ const getTodayStatus = async (): Promise<TodayStatus> => {
   }
 };
 
-const getMyAttendance = async () => {
+export type MyAttendanceResponse = {
+  success: boolean;
+  message?: string;
+  attendances?: Attendance[];
+  today?: string;
+  joinedOn?: string | null;
+};
+
+export type UserAttendanceResponse = {
+  success: boolean;
+  message?: string;
+  attendances?: Attendance[];
+  today?: string;
+  joinedOn?: string | null;
+  user?: { fullName: string; email: string };
+};
+
+const getMyAttendance = async (month?: string): Promise<MyAttendanceResponse> => {
   try {
-    const res = await api.get("/api/v1/attendance/me");
+    const res = await api.get("/api/v1/attendance/me", {
+      params: month ? { month } : undefined,
+    });
     return res.data;
   } catch (error: any) {
     return error?.response?.data || { success: false, message: "Something went wrong" };
@@ -90,4 +110,15 @@ const getAllAttendance = async (date?: string) => {
   }
 };
 
-export { markAttendance, markGuestAttendance, getTodayStatus, getMyAttendance, getAllAttendance };
+const getUserAttendance = async (userId: string, month?: string): Promise<UserAttendanceResponse> => {
+  try {
+    const res = await api.get(`/api/v1/attendance/user/${userId}`, {
+      params: month ? { month } : undefined,
+    });
+    return res.data;
+  } catch (error: any) {
+    return error?.response?.data || { success: false, message: "Something went wrong" };
+  }
+};
+
+export { markAttendance, markGuestAttendance, getTodayStatus, getMyAttendance, getAllAttendance, getUserAttendance };
