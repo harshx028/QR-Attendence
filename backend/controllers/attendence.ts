@@ -89,6 +89,7 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
       email: updated.user?.email,
       eventType: "CHECK-OUT",
       eventTime: now,
+      checkInTime: existing.markedAt,
       lat: lat ?? null,
       lng: lng ?? null,
     }).catch((e) => console.error("[SHEET] Failed to log check-out:", e.message));
@@ -244,8 +245,10 @@ export const markGuestAttendance = async (req: Request, res: Response) => {
       email: existing.email,
       address: existing.address,
       purpose: existing.purpose,
+      remarks: existing.remarks,
       eventType: "CHECK-OUT",
       eventTime: now,
+      checkInTime: existing.markedAt,
       lat: lat ?? null,
       lng: lng ?? null,
     }).catch((e) => console.error("[SHEET] Failed to log guest check-out:", e.message));

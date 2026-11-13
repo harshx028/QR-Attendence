@@ -367,6 +367,7 @@ export const processEntryForm = async (req: Request, res: Response) => {
       email: email?.trim() || null,
       address: address || null,
       purpose: purpose.trim(),
+      remarks: remarks?.trim() || null,
       eventType: "CHECK-IN",
       eventTime: now,
     }).catch((e: Error) => console.error("[SHEET] Failed to log manual entry:", e.message));
