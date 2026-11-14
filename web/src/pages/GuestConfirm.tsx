@@ -2,20 +2,10 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCheck, LogIn, LogOut, Phone, ScanLine, UserRound, XCircle } from "lucide-react";
 import { markGuestAttendance } from "../api/attendance.api";
+import { getLocation } from "../lib/permissions";
 import { Avatar, Button, CenteredCard, StatusIcon } from "../components/ui";
 
 type Status = "confirm" | "submitting" | "success" | "done" | "error";
-
-function getLocation(): Promise<{ lat: number | null; lng: number | null }> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve({ lat: null, lng: null });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve({ lat: null, lng: null }),
-      { timeout: 5000 }
-    );
-  });
-}
 
 export default function GuestConfirm() {
   const navigate = useNavigate();

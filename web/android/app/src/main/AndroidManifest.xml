@@ -38,4 +38,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- QR scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Check-in / check-out location -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Not hard requirements, so the app still installs on devices without them -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

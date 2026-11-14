@@ -2,20 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCheck, LogIn, LogOut, MapPin, MessageSquareText, ScanLine, XCircle } from "lucide-react";
 import { markAttendance, getTodayStatus } from "../api/attendance.api";
+import { getLocation } from "../lib/permissions";
 import { Button, CenteredCard, Spinner, StatusIcon } from "../components/ui";
 
 type Status = "checking" | "confirm_checkin" | "confirm_checkout" | "success" | "done" | "error";
-
-function getLocation(): Promise<{ lat: number | null; lng: number | null }> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve({ lat: null, lng: null });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve({ lat: null, lng: null }),
-      { timeout: 5000 }
-    );
-  });
-}
 
 function nowLabel() {
   return new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
