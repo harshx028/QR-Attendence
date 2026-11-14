@@ -37,6 +37,17 @@ export default function QrScanner({ onScan }: QrScannerProps) {
     if (access !== "granted") return;
     setFailed(false);
     const scanner = new Html5Qrcode("qr-reader");
+    let disposed = false;
+
+    // html5-qrcode's stop() THROWS synchronously when the camera isn't running,
+    // so guard it and swallow both sync and async errors.
+    const safeStop = () => {
+      try {
+        if (scanner.isScanning) scanner.stop().catch(() => {});
+      } catch {
+        /* already stopped */
+      }
+    };
 
     scanner
       .start(
@@ -46,18 +57,24 @@ export default function QrScanner({ onScan }: QrScannerProps) {
           if (scannedRef.current) return;
           scannedRef.current = true;
           navigator.vibrate?.(60);
-          scanner.stop().catch(() => {});
+          safeStop();
           onScan(decodedText);
         },
         () => {}
       )
+      .then(() => {
+        // The page was left while the camera was still starting — stop it now.
+        if (disposed) safeStop();
+      })
       .catch((err) => {
+        if (disposed) return;
         console.error("QR scanner start failed:", err);
         setFailed(true);
       });
 
     return () => {
-      scanner.stop().catch(() => {});
+      disposed = true;
+      safeStop();
     };
   }, [onScan, access]);
 
