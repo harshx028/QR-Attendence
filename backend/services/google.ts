@@ -312,14 +312,25 @@ const upsertDayRow = async (opts: {
     // No check-in row (e.g. the check-in write failed) — fall through and append a full row.
   }
 
-  await sheets.spreadsheets.values.append({
+  // Write at an explicit row starting in column A. (values.append guesses where
+  // the "table" is and can shift the row sideways if stray cells exist.)
+  const row = await nextFreeRow(sheets, spreadsheetId, opts.tabName, lastCol);
+  await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: rng(opts.tabName, `A:${lastCol}`),
+    range: rng(opts.tabName, `A${row}:${lastCol}${row}`),
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: { values: [opts.buildRow()] },
   });
-  return "appended row";
+  return `added row ${row}`;
+};
+
+/** First row below the last row that has anything in columns A..lastCol (never row 1). */
+const nextFreeRow = async (sheets: Sheets, spreadsheetId: string, tabName: string, lastCol: string) => {
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: rng(tabName, `A:${lastCol}`) });
+  const rows = res.data.values || [];
+  let last = rows.length;
+  while (last > 1 && !(rows[last - 1] || []).some((v) => String(v ?? "").trim() !== "")) last--;
+  return Math.max(2, last + 1);
 };
 
 // ---------- public API ----------

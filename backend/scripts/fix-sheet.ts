@@ -3,6 +3,10 @@
  * old one-row-per-event layout (separate CHECK-IN / CHECK-OUT rows) into the new
  * one-row-per-day layout (check-in + check-out + both locations + duration).
  *
+ * It also tidies tabs already in the new layout: rows shifted sideways are moved
+ * back to column A, duplicate rows for the same person/day are merged, blank rows
+ * and stray cells are removed, and rows are sorted by date/time.
+ *
  * Works from the sheet itself, so it also keeps rows that are not in the database.
  *
  *   npm run fix-sheet -- --dry-run   # show what would change, write nothing
@@ -138,25 +142,89 @@ const convertOld = (kind: Kind, rows: Cell[][]): DayRow[] => {
   });
 };
 
-/** Rows already in the NEW layout, normalised so they can be written back unchanged. */
-const readNew = (kind: Kind, rows: Cell[][]): DayRow[] => {
+const NEW_COLS = {
+  staff: { key: 2, date: 3, in: 4, out: 6, dur: 8 },
+  guest: { key: 1, date: 5, in: 6, out: 8, dur: 10 },
+} as const;
+
+const isBlank = (v: Cell | undefined) => String(v ?? "").trim() === "";
+const looksLikeDate = (v: Cell | undefined) =>
+  (typeof v === "number" && v > 30000 && v < 80000) || /^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "").trim());
+
+type Tidy = { rows: DayRow[]; realigned: number; dropped: Cell[][]; blankGaps: number };
+
+/**
+ * Rows already in the NEW layout, normalised so they can be written back.
+ * Also repairs rows that were shifted sideways (written starting in a later
+ * column) and drops blank rows / stray cells that aren't attendance rows.
+ */
+const readNew = (kind: Kind, rows: Cell[][]): Tidy => {
   const width = kind === "staff" ? HEADERS.length : GUEST_HEADERS.length;
-  const c = kind === "staff" ? { key: 2, date: 3, in: 4, out: 6 } : { key: 1, date: 5, in: 6, out: 8 };
-  return rows
-    .filter((r) => r.some((v) => v !== ""))
-    .map((r) => {
-      const cells = Array.from({ length: width }, (_, i) => r[i] ?? "");
-      const key = String(cells[c.key]).trim().replace(/^'/, "");
-      const date = cellToDate(cells[c.date]);
-      const inSecs = toSeconds(cells[c.in]);
-      cells[c.date] = date;
-      cells[c.in] = clock(inSecs) || String(cells[c.in]);
-      const outSecs = toSeconds(cells[c.out]);
-      if (outSecs != null) cells[c.out] = clock(outSecs);
-      if (kind === "guest") cells[c.key] = `'${key}`;
-      return { key, date, inSecs, cells };
-    });
+  const c = NEW_COLS[kind];
+  const out: Tidy = { rows: [], realigned: 0, dropped: [], blankGaps: 0 };
+
+  let lastData = rows.length - 1;
+  while (lastData >= 0 && (rows[lastData] || []).every(isBlank)) lastData--;
+
+  rows.slice(0, lastData + 1).forEach((raw) => {
+    let r = raw || [];
+    if (r.every(isBlank)) {
+      out.blankGaps++;
+      return;
+    }
+    // Shifted row: first filled cell is not in column A, but the data lines up
+    // as a full row once moved back (the date lands in the Date column).
+    const first = r.findIndex((v) => !isBlank(v));
+    if (first > 0 && looksLikeDate(r[first + c.date])) {
+      r = r.slice(first);
+      out.realigned++;
+    }
+    const cells = Array.from({ length: width }, (_, i) => r[i] ?? "");
+    const key = String(cells[c.key]).trim().replace(/^'/, "");
+    if (!key || !looksLikeDate(cells[c.date])) {
+      out.dropped.push(raw);
+      return;
+    }
+    const date = cellToDate(cells[c.date]);
+    const inSecs = toSeconds(cells[c.in]);
+    cells[c.date] = date;
+    cells[c.in] = clock(inSecs) || String(cells[c.in]);
+    const outSecs = toSeconds(cells[c.out]);
+    if (outSecs != null) cells[c.out] = clock(outSecs);
+    if (kind === "guest") cells[c.key] = `'${key}`;
+    out.rows.push({ key, date, inSecs, cells });
+  });
+  return out;
 };
+
+/** Merge rows for the same person + day into one (earliest check-in wins, gaps filled from the others). */
+const mergeRows = (kind: Kind, rows: DayRow[]): { rows: DayRow[]; duplicates: number } => {
+  const c = NEW_COLS[kind];
+  const groups = new Map<string, DayRow[]>();
+  for (const r of rows) {
+    const id = `${r.key}|${r.date}`;
+    groups.set(id, [...(groups.get(id) || []), r]);
+  }
+  let duplicates = 0;
+  const merged = [...groups.values()].map((g) => {
+    if (g.length === 1) return g[0];
+    duplicates += g.length - 1;
+    const sorted = [...g].sort((a, b) => (a.inSecs ?? 1e9) - (b.inSecs ?? 1e9));
+    const base = { ...sorted[0], cells: [...sorted[0].cells] };
+    for (const other of sorted.slice(1)) {
+      other.cells.forEach((v, i) => {
+        if (isBlank(base.cells[i]) && !isBlank(v)) base.cells[i] = v;
+      });
+    }
+    if (isBlank(base.cells[c.dur])) {
+      base.cells[c.dur] = durationFromSecs(toSeconds(base.cells[c.in]), toSeconds(base.cells[c.out]));
+    }
+    return base;
+  });
+  return { rows: merged, duplicates };
+};
+
+const byDateTime = (a: DayRow, b: DayRow) => a.date.localeCompare(b.date) || (a.inSecs ?? 0) - (b.inSecs ?? 0);
 
 // ---------- main ----------
 
@@ -202,33 +270,34 @@ const main = async () => {
 
   let changed = 0;
   for (const [name, t] of targets) {
-    if (t.oldTabs.length === 0) continue; // already fully in the new layout
-    changed++;
-
-    const existing = readNew(t.kind, t.newRows);
-    const have = new Set(existing.map((r) => `${r.key}|${r.date}`));
+    const tidy = readNew(t.kind, t.newRows);
+    const have = new Set(tidy.rows.map((r) => `${r.key}|${r.date}`));
     const converted = t.oldTabs.flatMap((o) => convertOld(t.kind, o.rows));
     const added = converted.filter((r) => !have.has(`${r.key}|${r.date}`));
+    const { rows: merged0, duplicates } = mergeRows(t.kind, [...tidy.rows, ...added]);
+    const merged = [...merged0].sort(byDateTime);
 
-    // Only archived "(old format)" tabs left and nothing new to merge → already fixed.
-    if (added.length === 0 && !t.oldTabs.some((o) => o.title === name)) {
-      changed--;
-      console.log(`· "${name}" already fixed`);
+    const activeOldTab = t.oldTabs.some((o) => o.title === name); // still in the old layout
+    const reordered = tidy.rows.some((r, i) => i > 0 && byDateTime(tidy.rows[i - 1], r) > 0);
+    const needsTidy = tidy.realigned > 0 || tidy.dropped.length > 0 || tidy.blankGaps > 0 || duplicates > 0 || reordered;
+
+    if (!activeOldTab && added.length === 0 && !needsTidy) {
+      console.log(`· "${name}" is fine`);
       continue;
     }
+    changed++;
 
-    const merged = [...existing, ...added].sort(
-      (a, b) => a.date.localeCompare(b.date) || (a.inSecs ?? 0) - (b.inSecs ?? 0)
-    );
-
-    const oldEventRows = t.oldTabs.reduce((n, o) => n + o.rows.length, 0);
-    console.log(
-      `\n▶ "${name}" (${t.kind}): ${oldEventRows} old event rows from ${t.oldTabs
-        .map((o) => `"${o.title}"`)
-        .join(", ")} → ${converted.length} day rows` +
-        (existing.length ? `; kept ${existing.length} existing new-layout rows, added ${added.length}` : "") +
-        ` → ${merged.length} rows total`
-    );
+    const notes: string[] = [];
+    if (t.oldTabs.length) {
+      const oldEventRows = t.oldTabs.reduce((n, o) => n + o.rows.length, 0);
+      notes.push(`${oldEventRows} old event rows → ${converted.length} day rows (${added.length} new)`);
+    }
+    if (tidy.realigned) notes.push(`${tidy.realigned} shifted row(s) moved back to column A`);
+    if (duplicates) notes.push(`${duplicates} duplicate row(s) merged`);
+    if (tidy.blankGaps) notes.push(`${tidy.blankGaps} blank row(s) removed`);
+    if (reordered) notes.push("rows sorted by date/time");
+    console.log(`\n▶ "${name}" (${t.kind}): ${notes.join("; ")} → ${merged.length} rows`);
+    for (const d of tidy.dropped) console.log(`    dropping non-attendance row: ${JSON.stringify(d)}`);
     for (const r of merged.slice(0, 3)) console.log("   ", JSON.stringify(r.cells));
     if (merged.length > 3) console.log(`    … ${merged.length - 3} more`);
 
@@ -239,9 +308,9 @@ const main = async () => {
     }
   }
 
-  if (!changed) console.log("Nothing to fix — every tab already uses the new layout.");
+  if (!changed) console.log("Nothing to fix — every tab is in the new layout and tidy.");
   else if (DRY_RUN) console.log(`\nDry run: ${changed} tab(s) would be fixed. Run without --dry-run to apply.`);
-  else console.log(`\nDone: ${changed} tab(s) fixed. Old tabs were kept with an "(old format)" suffix.`);
+  else console.log(`\nDone: ${changed} tab(s) fixed. Any old-layout tabs were kept with an "(old format)" suffix.`);
 };
 
 main().catch((e) => {
