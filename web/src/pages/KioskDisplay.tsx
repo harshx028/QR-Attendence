@@ -8,7 +8,8 @@ import { Spinner, cx } from "../components/ui";
 
 type QrState = { token: string; expiresAt: number; rotationSeconds: number };
 
-const POLL_EVERY_MS = 10_000; // safety refresh even while the code is still valid
+const POLL_EVERY_MS = 3_000; // pick up a new code within a few seconds, whatever the timing
+const STUCK_AFTER_MS = 150_000; // same code for 2.5 min → the rotation job is probably not running
 
 function useClock() {
   const [now, setNow] = useState(() => Date.now());
@@ -52,6 +53,8 @@ export default function KioskDisplay() {
   const offsetRef = useRef(0); // serverTime - local time
   const inFlight = useRef(false);
   const lastFetch = useRef(0);
+  const currentToken = useRef<string | null>(null);
+  const [tokenSince, setTokenSince] = useState(() => Date.now()); // when the current code first appeared
   const now = useClock();
   useWakeLock();
 
@@ -64,8 +67,13 @@ export default function KioskDisplay() {
 
     if (res.success && res.token && res.expiresAt) {
       if (res.serverTime) offsetRef.current = new Date(res.serverTime).getTime() - Date.now();
+      const token = res.token;
+      if (currentToken.current !== token) {
+        currentToken.current = token;
+        setTokenSince(Date.now());
+      }
       setQr({
-        token: res.token,
+        token,
         expiresAt: new Date(res.expiresAt).getTime(),
         rotationSeconds: res.rotationSeconds || 60,
       });
@@ -116,7 +124,8 @@ export default function KioskDisplay() {
   const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
   const pct = qr ? Math.min(100, Math.max(0, (remainingMs / (qr.rotationSeconds * 1000)) * 100)) : 0;
   const refreshing = Boolean(qr) && remainingMs <= 0;
-  const stale = Boolean(qr) && remainingMs < -15_000; // no new code for a while
+  // Never hide a code the server says is current — it is still valid for scanning.
+  const stuck = Boolean(qr) && now - tokenSince > STUCK_AFTER_MS;
   const urgent = seconds <= 10 && !refreshing;
 
   const clock = new Date(now).toLocaleTimeString("en-IN", {
@@ -210,7 +219,7 @@ export default function KioskDisplay() {
               {svg ? (
                 <div
                   key={qr?.token}
-                  className={cx("h-full w-full animate-pop [&>svg]:h-full [&>svg]:w-full", stale && "opacity-20 blur-sm")}
+                  className="h-full w-full animate-pop [&>svg]:h-full [&>svg]:w-full"
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               ) : (
@@ -226,18 +235,12 @@ export default function KioskDisplay() {
                 </div>
               )}
 
-              {svg && !stale && (
+              {svg && (
                 <div className="absolute left-1/2 top-1/2 flex h-[19%] w-[19%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-1.5">
                   <img src="/logo.svg" alt="" className="h-full w-full rounded-xl" />
                 </div>
               )}
 
-              {stale && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-                  <Spinner className="h-10 w-10" />
-                  <p className="text-sm font-bold text-slate-600">Waiting for a new code…</p>
-                </div>
-              )}
             </div>
 
             {/* Countdown */}
@@ -264,6 +267,13 @@ export default function KioskDisplay() {
               </div>
             </div>
           </div>
+
+          {stuck && !error && (
+            <p className="mt-4 text-center text-sm font-semibold text-amber-200">
+              This code hasn't changed for a few minutes — it still works, but check the server's
+              token rotation.
+            </p>
+          )}
 
           {error && qr && (
             <p className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-amber-200">

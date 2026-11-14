@@ -19,13 +19,20 @@ export const getKioskQr = async (_req: AuthRequest, res: Response) => {
         message: "QR code not generated yet. It will appear within a minute.",
       });
     }
+    // The cron job rotates the token at the start of every minute, so the next
+    // rotation is the next minute boundary on this server's clock. (Deliberately
+    // not derived from the stored updatedAt, which can come back timezone-shifted.)
+    const now = Date.now();
+    const step = TOKEN_ROTATION_SECONDS * 1000;
+    const nextRotation = Math.floor(now / step) * step + step;
+
     return res.status(200).json({
       success: true,
       token: record.value,
       updatedAt: record.updatedAt.toISOString(),
-      expiresAt: new Date(record.updatedAt.getTime() + TOKEN_ROTATION_SECONDS * 1000).toISOString(),
+      expiresAt: new Date(nextRotation).toISOString(),
       rotationSeconds: TOKEN_ROTATION_SECONDS,
-      serverTime: new Date().toISOString(),
+      serverTime: new Date(now).toISOString(),
     });
   } catch (error: any) {
     console.error("Get kiosk QR error:", error);
