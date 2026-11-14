@@ -39,3 +39,31 @@ export const isAdmin = async (req: AuthRequest, res: Response, next: NextFunctio
     return res.status(500).json({ message: 'Error verifying admin access' });
   }
 };
+
+/** Allow only users whose role is in `roles`. Use after `authenticate`. */
+export const requireRole =
+  (...roles: string[]) =>
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { role: true } });
+      if (!user || !roles.includes(user.role)) {
+        return res.status(403).json({ success: false, message: "You don't have access to this resource" });
+      }
+      next();
+    } catch {
+      return res.status(500).json({ success: false, message: "Error verifying access" });
+    }
+  };
+
+/** Block kiosk display accounts (e.g. from marking attendance). Use after `authenticate`. */
+export const notKiosk = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { role: true } });
+    if (user?.role === "QR_KIOSK") {
+      return res.status(403).json({ success: false, message: "Kiosk accounts can't mark attendance" });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ success: false, message: "Error verifying access" });
+  }
+};

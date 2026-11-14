@@ -100,14 +100,11 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    if (user.role === 'QR_KIOSK') {
-      return res.status(403).json({
-        success: false,
-        message: 'This account can only be used at the QR kiosk display'
-      });
-    }
-
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    // Kiosk display accounts sign in through the same endpoint; the web panel
+    // sends them straight to the QR display. Longer session so the screen stays up.
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      expiresIn: user.role === 'QR_KIOSK' ? '30d' : '7d',
+    });
 
     res.status(200).json({
       success: true,

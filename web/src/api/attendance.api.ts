@@ -105,3 +105,25 @@ const getAllAttendance = async (date?: string) => {
 };
 
 export { markAttendance, markGuestAttendance, getTodayStatus, getMyAttendance, getAllAttendance };
+
+export type GuestEntry = {
+  fullName: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  purpose: string;
+  remarks?: string;
+};
+
+/** Public guest visit form (no QR scan needed). */
+export const submitGuestEntry = async (entry: GuestEntry) => {
+  try {
+    const res = await api.post("/api/v1/attendance/guest/entry", entry);
+    return res.data as { success: boolean; message: string };
+  } catch (error: any) {
+    return (error?.response?.data || { success: false, message: "Something went wrong" }) as {
+      success: boolean;
+      message: string;
+    };
+  }
+};

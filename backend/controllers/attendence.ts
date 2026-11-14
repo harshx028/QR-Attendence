@@ -282,3 +282,63 @@ export const getAllAttendance = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: "Error fetching attendance records", error: error.message });
   }
 };
+
+/**
+ * Public guest entry form (web panel /guest). Records a guest check-in without
+ * a QR scan. One entry per phone number per day.
+ */
+export const createGuestEntry = async (req: Request, res: Response) => {
+  try {
+    const { fullName, phone, email, address, purpose, remarks } = req.body ?? {};
+
+    if (!String(fullName ?? "").trim() || !String(phone ?? "").trim() || !String(purpose ?? "").trim()) {
+      return res.status(400).json({ success: false, message: "Name, phone and purpose of visit are required" });
+    }
+
+    const phoneDigits = String(phone).replace(/\D/g, "").slice(-10);
+    if (phoneDigits.length !== 10) {
+      return res.status(400).json({ success: false, message: "Please enter a valid 10-digit phone number" });
+    }
+
+    const today = getISTDate();
+    const now = new Date();
+
+    const existing = await prisma.guestAttendance.findFirst({ where: { phone: phoneDigits, date: today } });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: `An entry for ${phoneDigits} already exists today. Contact the admin if this is a mistake.`,
+      });
+    }
+
+    const clean = (v: unknown) => (String(v ?? "").trim() ? String(v).trim() : null);
+    const entry = await prisma.guestAttendance.create({
+      data: {
+        fullName: String(fullName).trim(),
+        phone: phoneDigits,
+        email: clean(email),
+        address: clean(address),
+        purpose: String(purpose).trim(),
+        remarks: clean(remarks),
+        date: today,
+        markedAt: now,
+      },
+    });
+
+    saveGuestToSheet({
+      fullName: entry.fullName,
+      phone: entry.phone,
+      email: entry.email,
+      address: entry.address,
+      purpose: entry.purpose,
+      remarks: entry.remarks,
+      eventType: "CHECK-IN",
+      eventTime: now,
+    }).catch((e) => console.error("[SHEET] Failed to log guest entry:", e.message));
+
+    return res.status(201).json({ success: true, message: "Your visit has been recorded", entry });
+  } catch (error: any) {
+    console.error("Guest entry error:", error);
+    res.status(500).json({ success: false, message: "Error saving your entry" });
+  }
+};

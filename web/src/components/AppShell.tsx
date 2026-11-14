@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { CalendarDays, Home, LogOut, Users } from "lucide-react";
+import { CalendarDays, Home, LogOut, QrCode, Users } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import { Avatar, cx } from "./ui";
 
@@ -10,6 +10,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Home", icon: Home },
   { to: "/attendence/history", label: "My Attendance", icon: CalendarDays },
   { to: "/attendence/all", label: "Team", icon: Users, adminOnly: true },
+  { to: "/kiosk", label: "Kiosk QR", icon: QrCode, adminOnly: true },
 ];
 
 export default function AppShell({

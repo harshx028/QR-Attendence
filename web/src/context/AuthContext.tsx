@@ -10,7 +10,7 @@ type User = {
   id: string;
   fullName: string;
   email: string;
-  role: "USER" | "ADMIN";
+  role: "USER" | "ADMIN" | "QR_KIOSK";
   createdAt?: string;
 } | null;
 

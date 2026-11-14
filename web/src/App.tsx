@@ -12,6 +12,7 @@ import GuestScan from "./pages/GuestScan";
 import GuestConfirm from "./pages/GuestConfirm";
 import AdminAttendance from "./pages/AdminAttendance";
 import MyAttendance from "./pages/MyAttendance";
+import KioskDisplay from "./pages/KioskDisplay";
 
 const router = createBrowserRouter([
   {
@@ -57,9 +58,17 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/kiosk",
+    element: (
+      <ProtectedRoute roles={["QR_KIOSK", "ADMIN"]}>
+        <KioskDisplay />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/attendence/all",
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute roles={["ADMIN"]}>
         <AdminAttendance />
       </ProtectedRoute>
     ),
